@@ -400,7 +400,7 @@ async def get_outstanding_bills(user_id: str) -> List[Bill]:
             .where(Bill.user_id == user_id)
             .where(
                 or_(
-                    Bill.status == BillStatus.PENDING, Bill.status == BillStatus.OVERDUE
+                    Bill.status.in_(BillStatus.PENDING, BillStatus.PENDING.value), Bill.status == BillStatus.OVERDUE
                 )
             )
             .order_by(Bill.due_date)
