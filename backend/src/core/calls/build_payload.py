@@ -417,7 +417,7 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
             "similarityBoost": 0.8,
             "speed": 0.95,
         },
-        first_message="Hi! This is Jason, from Digital Bank. I'm your personal assistant and can help you with transfers, payments, and account management.",
+        first_message="Hi! This is Jason, from Banksta. I got a message that you need some banking assistance.",
     ),
     "my": ...,
     "zh": AgentConfig(

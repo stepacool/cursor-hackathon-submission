@@ -14,6 +14,8 @@ async def process_call(call: Call):
         logger.opt(exception=e).error(f"ERROR IN BACKGROUND JOB LOOP: {e}")
 
 
+POLLING_INTERVAL = 15
+
 async def main():
     while True:
         try:
@@ -21,11 +23,12 @@ async def main():
             await asyncio.gather(*[
                 process_call(call) for call in calls
             ], return_exceptions=True)
-
+            if not calls:
+                logger.info(f"No calls this cycle, waiting {POLLING_INTERVAL}")
         except Exception as e:
             logger.opt(exception=e).error(f"ERROR IN BACKGROUND JOB LOOP: {e}")
         finally:
-            await asyncio.sleep(15)
+            await asyncio.sleep(POLLING_INTERVAL)
 
 if __name__ == "__main__":
     asyncio.run(main())

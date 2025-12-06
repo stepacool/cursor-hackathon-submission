@@ -18,4 +18,5 @@ COPY src/ ./
 
 ENV PYTHONPATH="."
 # Set the entrypoint
+EXPOSE 8000
 ENTRYPOINT ["uv", "run", "python", "entrypoints/api/server.py"]

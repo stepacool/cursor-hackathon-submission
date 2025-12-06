@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from loguru import logger
 from starlette.requests import Request
 
-from backend.src.core.tools.account_management import close_account_tool
+from core.tools.account_management import close_account_tool
 from core.tools import (
     list_outstanding_bills,
     pay_outstanding_bill,
@@ -14,7 +14,7 @@ from core.tools import (
     list_accounts,
 )
 from infrastructure.models import ToolType
-from infrastructure.repositories import get_call_by_phone_number, close_account
+from infrastructure.repositories import get_call_by_phone_number
 from core.tools.transfer_money import (
     transfer_money_between_own_accounts,
     transfer_money_to_user,
