@@ -39,6 +39,14 @@ const COUNTRY_CODES = [
   { code: "+65", country: "Singapore", flag: "https://flagcdn.com/w40/sg.png" },
 ];
 
+const PHONE_REGEX: Record<string, RegExp> = {
+  "+60": /^1\d{8,9}$/, // Malaysia: 9-10 digits, starts with 1
+  "+86": /^1[3-9]\d{9}$/, // China: 11 digits, starts with 1
+  "+1": /^[2-9]\d{9}$/, // US: 10 digits
+  "+44": /^7\d{9}$/, // UK: 10 digits, starts with 7 (mobile)
+  "+65": /^[89]\d{7}$/, // Singapore: 8 digits, starts with 8 or 9
+};
+
 const onboardingSchema = z.object({
   countryCode: z.enum(
     COUNTRY_CODES.map((c) => c.code) as [string, ...string[]],
@@ -50,7 +58,6 @@ const onboardingSchema = z.object({
     .string()
     .trim()
     .min(1, "Phone number is required")
-    .min(8, "Please enter a valid phone number")
     .regex(/^[0-9+\-\s]+$/, "Only numbers, plus, dashes, or spaces are allowed"),
   accountTitle: z
     .string()
@@ -66,6 +73,20 @@ const onboardingSchema = z.object({
     .refine((val) => Number(val) >= 0, {
       message: "Balance must be at least 0",
     }),
+}).superRefine((data, ctx) => {
+  const { countryCode, phone } = data;
+  const cleanPhone = phone.replace(/\D/g, ""); // Remove non-digits
+
+  if (!phone) return;
+
+  const regex = PHONE_REGEX[countryCode];
+  if (regex && !regex.test(cleanPhone)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Invalid phone number format for the selected country",
+      path: ["phone"],
+    });
+  }
 });
 
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
@@ -247,7 +268,7 @@ export function OnboardingDialog() {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="138 0000 0000"
+                        placeholder="1890000000"
                         disabled={isSubmitting}
                         {...field}
                       />
