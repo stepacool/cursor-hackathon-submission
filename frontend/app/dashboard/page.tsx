@@ -17,9 +17,10 @@ import { authClient } from "@/lib/auth-client";
 import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import type { Transaction, TransactionsResponse } from "@/types/transaction";
 
-// Transaction type
-interface Transaction {
+// Display transaction type for UI
+interface DisplayTransaction {
   id: string;
   merchant: string;
   category: string;
@@ -31,89 +32,66 @@ interface Transaction {
   type: "debit" | "credit";
 }
 
-// Mock transaction data
-const transactions: Transaction[] = [
-  {
-    id: "1",
-    merchant: "Amazon",
-    category: "Products",
-    amount: -1456,
-    btcAmount: "BTC 0.067",
-    time: "10:29",
-    date: "Today, 4 March",
-    icon: "🛒",
-    type: "debit",
-  },
-  {
-    id: "2",
-    merchant: "Netflix",
-    category: "Entertainment",
-    amount: -20,
-    btcAmount: "BTC 0.00092",
-    time: "09:49",
-    date: "Today, 4 March",
-    icon: "🎬",
-    type: "debit",
-  },
-  {
-    id: "3",
-    merchant: "Balance Top Up",
-    category: "Metamask Wallet",
-    amount: 1000,
-    btcAmount: "BTC 0.046",
-    time: "23:08",
-    date: "Yesterday, 3 March",
-    icon: "💳",
-    type: "credit",
-  },
-  {
-    id: "4",
-    merchant: "Airbnb",
-    category: "Hospitality",
-    amount: -956,
-    btcAmount: "BTC 0.044",
-    time: "20:50",
-    date: "Yesterday, 3 March",
-    icon: "🏠",
-    type: "debit",
-  },
-  {
-    id: "5",
-    merchant: "Money Transfer",
-    category: "From Ann Gray",
-    amount: 500,
-    btcAmount: "BTC 0.023",
-    time: "18:40",
-    date: "Yesterday, 3 March",
-    icon: "💸",
-    type: "credit",
-  },
-  {
-    id: "6",
-    merchant: "Figma",
-    category: "Software",
-    amount: -300,
-    btcAmount: "BTC 0.014",
-    time: "19:50",
-    date: "Yesterday, 3 March",
-    icon: "🎨",
-    type: "debit",
-  },
-  {
-    id: "7",
-    merchant: "App Store",
-    category: "Products",
-    amount: -45,
-    btcAmount: "BTC 0.0021",
-    time: "10:29",
-    date: "Yesterday, 3 March",
-    icon: "📱",
-    type: "debit",
-  },
-];
+// Convert API transaction to display format
+function convertToDisplayTransaction(
+  txn: Transaction,
+  currentUserId: string
+): DisplayTransaction {
+  const isCredit = txn.to_user_id === currentUserId;
+  const amount = parseFloat(txn.amount);
+
+  return {
+    id: txn.id.toString(),
+    merchant: txn.description || getTransactionLabel(txn.type),
+    category: txn.type,
+    amount: isCredit ? amount : -amount,
+    btcAmount: "BTC 0.00", // Calculate if you have BTC conversion
+    time: new Date(txn.created_at).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }),
+    date: formatTransactionDate(txn.created_at),
+    icon: getTransactionIcon(txn.type),
+    type: isCredit ? "credit" : "debit",
+  };
+}
+
+function getTransactionLabel(type: string): string {
+  switch (type) {
+    case 'TRANSFER': return 'Money Transfer';
+    case 'DEPOSIT': return 'Balance Top Up';
+    case 'WITHDRAWAL': return 'Withdrawal';
+    default: return type;
+  }
+}
+
+function getTransactionIcon(type: string): string {
+  switch (type) {
+    case 'TRANSFER': return '💸';
+    case 'DEPOSIT': return '💳';
+    case 'WITHDRAWAL': return '💰';
+    default: return '💵';
+  }
+}
+
+function formatTransactionDate(dateString: string): string {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Today, ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}`;
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday, ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}`;
+  } else {
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
+  }
+}
 
 // Group transactions by date
-function groupTransactionsByDate(txns: Transaction[]) {
+function groupTransactionsByDate(txns: DisplayTransaction[]) {
   return txns.reduce(
     (groups, txn) => {
       const date = txn.date;
@@ -123,7 +101,7 @@ function groupTransactionsByDate(txns: Transaction[]) {
       groups[date].push(txn);
       return groups;
     },
-    {} as Record<string, Transaction[]>
+    {} as Record<string, DisplayTransaction[]>
   );
 }
 
@@ -131,9 +109,39 @@ export default function Dashboard() {
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [copied, setCopied] = useState(false);
   const [balance, setBalance] = useState(1456);
+  const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
 
+  // Fetch transactions
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchTransactions() {
+      try {
+        setIsLoadingTransactions(true);
+        const response = await fetch('/api/transactions');
+        const data: TransactionsResponse = await response.json();
+
+        if (data.success && data.data) {
+          const displayTransactions = data.data.map(txn =>
+            convertToDisplayTransaction(txn, userId)
+          );
+          setTransactions(displayTransactions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch transactions:', error);
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    }
+
+    fetchTransactions();
+  }, [userId]);
+
+  // Load balance from localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     const balanceValue =
@@ -344,50 +352,60 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            {Object.entries(groupedTransactions).map(([date, txns]) => (
-              <div key={date} className="mb-6">
-                <p className="mb-3 text-sm text-muted-foreground">{date}</p>
-                <div className="space-y-1">
-                  {txns.map((txn) => (
-                    <div
-                      key={txn.id}
-                      className="group flex items-center justify-between rounded-xl px-3 py-3 transition-colors hover:bg-accent/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground w-10">
-                          {txn.time}
-                        </span>
-                        <div className="flex size-10 items-center justify-center rounded-xl bg-muted/50 text-lg">
-                          {txn.icon}
+            {isLoadingTransactions ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-muted-foreground">Loading transactions...</p>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-muted-foreground">No transactions yet</p>
+              </div>
+            ) : (
+              Object.entries(groupedTransactions).map(([date, txns]) => (
+                <div key={date} className="mb-6">
+                  <p className="mb-3 text-sm text-muted-foreground">{date}</p>
+                  <div className="space-y-1">
+                    {txns.map((txn) => (
+                      <div
+                        key={txn.id}
+                        className="group flex items-center justify-between rounded-xl px-3 py-3 transition-colors hover:bg-accent/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground w-10">
+                            {txn.time}
+                          </span>
+                          <div className="flex size-10 items-center justify-center rounded-xl bg-muted/50 text-lg">
+                            {txn.icon}
+                          </div>
+                          <div>
+                            <p className="font-medium">{txn.merchant}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {txn.category}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{txn.merchant}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {txn.category}
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "font-semibold",
+                              txn.type === "credit"
+                                ? "text-emerald-500"
+                                : "text-foreground"
+                            )}
+                          >
+                            {txn.type === "credit" ? "+" : "-"}
+                            {formatCurrency(txn.amount)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {txn.btcAmount}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p
-                          className={cn(
-                            "font-semibold",
-                            txn.type === "credit"
-                              ? "text-emerald-500"
-                              : "text-foreground"
-                          )}
-                        >
-                          {txn.type === "credit" ? "+" : "-"}
-                          {formatCurrency(txn.amount)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {txn.btcAmount}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
