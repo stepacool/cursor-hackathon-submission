@@ -213,7 +213,7 @@ async def transfer_money_between_accounts(
         return await create_transaction(
             reference=f"TRANSFER-{from_account.account_number}-{to_account.account_number}-{amount}-{datetime.utcnow().timestamp()}",
             amount=amount,
-            type=TransactionType.TRANSFER,
+            transaction_type=TransactionType.TRANSFER,
             from_account_id=from_account_id,
             to_account_id=to_account_id,
             description=f"Transfer from {from_account.account_number} to {to_account.account_number}",

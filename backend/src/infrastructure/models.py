@@ -118,9 +118,6 @@ class Transaction(CustomBase):
     call_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("calls.id"), nullable=True, index=True
     )
-    tool_invocation_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("tool_invocations.id"), nullable=True, index=True
-    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -133,9 +130,6 @@ class Transaction(CustomBase):
         foreign_keys=[to_account_id], back_populates="incoming_transactions"
     )
     call: Mapped[Optional["Call"]] = relationship(back_populates="transactions")
-    tool_invocation: Mapped[Optional["ToolInvocation"]] = relationship(
-        back_populates="transaction"
-    )
 
     __table_args__ = (
         Index("ix_transaction_from_created", "from_account_id", "created_at"),
@@ -203,9 +197,6 @@ class Call(CustomBase):
     transcriptions: Mapped[List["CallTranscription"]] = relationship(
         back_populates="call", cascade="all, delete-orphan"
     )
-    tool_invocations: Mapped[List["ToolInvocation"]] = relationship(
-        back_populates="call", cascade="all, delete-orphan"
-    )
     transactions: Mapped[List["Transaction"]] = relationship(back_populates="call")
 
     __table_args__ = (Index("ix_call_user_scheduled", "user_id", "scheduled_at"),)
@@ -233,30 +224,3 @@ class CallTranscription(CustomBase):
     call: Mapped["Call"] = relationship(back_populates="transcriptions")
 
     __table_args__ = (Index("ix_transcription_call_seq", "call_id", "sequence"),)
-
-
-class ToolInvocation(CustomBase):
-    __tablename__ = "tool_invocations"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    call_id: Mapped[int] = mapped_column(
-        ForeignKey("calls.id", ondelete="CASCADE"), index=True
-    )
-
-    tool_type: Mapped[ToolType] = mapped_column()
-    parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
-    response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
-
-    success: Mapped[bool] = mapped_column(default=False)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    invoked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-
-    # Relationships
-    call: Mapped["Call"] = relationship(back_populates="tool_invocations")
-    transaction: Mapped[Optional["Transaction"]] = relationship(
-        back_populates="tool_invocation"
-    )
-
-    __table_args__ = (Index("ix_tool_call_invoked", "call_id", "invoked_at"),)
