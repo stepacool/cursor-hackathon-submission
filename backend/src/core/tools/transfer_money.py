@@ -1,7 +1,5 @@
-from src.entrypoints.api.serializers import (
-    TransferMoneyToolCallParameters,
-)
-from src.infrastructure.repositories import (
+from entrypoints.api.serializers import TransferMoneyOwnAccountsToolCallParameters
+from infrastructure.repositories import (
     get_account_by_title,
     transfer_money_between_accounts,
 )
@@ -11,15 +9,11 @@ async def transfer_money_between_own_accounts(
     call_id: int,
     tool_invocation_id: int,
     user_id: str,
-    tool_parameters: TransferMoneyToolCallParameters,
+    tool_parameters: TransferMoneyOwnAccountsToolCallParameters,
 ) -> str:
-    """Transfer money between accounts"""
-    from_account_label = tool_parameters.from_account_label
-    to_account_label = tool_parameters.to_account_label
-    amount = tool_parameters.amount
-
-    from_account = await get_account_by_title(from_account_label)
-    to_account = await get_account_by_title(to_account_label)
+    """Transfer money between own accounts"""
+    from_account = await get_account_by_title(tool_parameters.from_account_title)
+    to_account = await get_account_by_title(tool_parameters.to_account_title)
 
     if not from_account:
         return "From account not found"
@@ -30,13 +24,13 @@ async def transfer_money_between_own_accounts(
     if from_account.user_id != user_id:
         return "From account does not belong to the user"
 
-    if from_account.balance < amount:
+    if from_account.balance < tool_parameters.amount:
         return "Insufficient balance"
 
     transaction = await transfer_money_between_accounts(
         from_account.id,
         to_account.id,
-        amount,
+        tool_parameters.amount,
         call_id=call_id,
         tool_invocation_id=tool_invocation_id,
     )

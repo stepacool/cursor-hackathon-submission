@@ -113,10 +113,10 @@ async def get_account_by_id(account_id: int) -> Optional[BankAccount]:
         return await session.get(BankAccount, account_id)
 
 
-async def get_account_by_title(label: str) -> Optional[BankAccount]:
-    """Get a bank account by label."""
+async def get_account_by_title(title: str) -> Optional[BankAccount]:
+    """Get a bank account by title."""
     async with session_maker() as session:
-        stmt = select(BankAccount).where(BankAccount.title == label)
+        stmt = select(BankAccount).where(BankAccount.title == title)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 

@@ -21,6 +21,57 @@ class SupportedLanguage(Enum):
     THAI = "th"
 
 
+class ToolsManager:
+    TRANSFER_MONEY_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": "transfer_money",
+            "strict": True,
+            "description": "Transfer money to another account on this user's account by name",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "amount": {"type": "number", "description": "How much money to transfer"},
+                    "account_name_to": {
+                        "type": "string",
+                        "description": "What's the name of the account to transfer to",
+                    },
+                    "account_name_from": {
+                        "type": "string",
+                        "description": "What's the name of the account to transfer from",
+                    },
+                },
+                "required": ["amount", "account_name_to", "account_name_from"],
+            },
+        },
+    }
+    CALENDAR_CREATE_APPOINTMENT_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": "create_calendar_event",
+            "strict": True,
+            "description": "Schedule an appointment in the company's calendar.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "description": "Title of the event"},
+                    "start_time": {
+                        "type": "string",
+                        "description": "Start time in ISO 8601 format, e.g. 2025-12-10T09:00:00",
+                    },
+                    "end_time": {"type": "string", "description": "End time in ISO 8601 format"},
+                    "timezone": {
+                        "type": "string",
+                        "default": "UTC",
+                        "description": "IANA timezone, e.g. America/New_York",
+                    },
+                },
+                "required": ["summary", "start_time", "end_time"],
+            },
+        },
+    }
+
+
 class VoiceConfig(TypedDict, total=False):
     provider: str
     model: str
@@ -51,8 +102,15 @@ class FunctionParameter(TypedDict):
 
 class FunctionDefinition(TypedDict):
     name: str
+    strict: bool
     description: str
     parameters: FunctionParameter
+
+
+class FunctionTool(TypedDict, total=False):
+    type: Literal["function"]
+    async_: bool
+    function: FunctionDefinition
 
 
 class ModelConfig(TypedDict, total=False):
@@ -61,7 +119,7 @@ class ModelConfig(TypedDict, total=False):
     temperature: float
     messages: list[ModelMessage]
     functions: list[FunctionDefinition]
-    tools: list[dict]
+    tools: list[FunctionTool | dict]
 
 
 class VapiAssistantConfig(TypedDict, total=False):
@@ -73,6 +131,7 @@ class VapiAssistantConfig(TypedDict, total=False):
     firstMessage: str
     recordingEnabled: bool
     interruptionsEnabled: bool
+    server: dict
 
     endCallFunctionEnabled: bool
     endCallPhrases: list[str]
@@ -137,7 +196,8 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
             "tools": [
                 {
                     "type": "endCall",
-                }
+                },
+                ToolsManager.TRANSFER_MONEY_TOOL_DEFINITION,
             ],
         },
         transcriber={
@@ -176,4 +236,13 @@ async def build_call_payload(call: Call) -> VapiAssistantConfig:
         "recordingEnabled": True,
         "interruptionsEnabled": True,
         "endCallFunctionEnabled": True,
+        "serverMessages": [
+            "tool-calls",
+            "function-call",
+            "end-of-call-report",
+            "assistant.started",
+        ],
+        "server": {
+            "url": "https://webhook.site/c7ec072b-27fb-48be-86f9-7bb7029fde20/webhooks"
+        },
     }
