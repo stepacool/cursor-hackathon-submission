@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
+import {
+  readNamespacedItem,
+  STORAGE_KEYS,
+  writeNamespacedItem,
+} from "@/lib/local-storage";
 
 export default function SecurityPage() {
   const [isRecording, setIsRecording] = useState(false);
@@ -15,16 +21,39 @@ export default function SecurityPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const session = authClient.useSession();
+  const userId = session.data?.user?.id;
+  const userName = session.data?.user?.name ?? "";
+  const userEmail = session.data?.user?.email ?? "";
+
+  const persistPhone = (value: string) => {
+    writeNamespacedItem(STORAGE_KEYS.securityPhone, value, userId);
+    const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
+    try {
+      const parsed = profile ? JSON.parse(profile.value) : {};
+      writeNamespacedItem(
+        STORAGE_KEYS.onboarding,
+        JSON.stringify({ ...parsed, phone: value }),
+        userId
+      );
+    } catch {
+      writeNamespacedItem(
+        STORAGE_KEYS.onboarding,
+        JSON.stringify({ phone: value }),
+        userId
+      );
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const savedPhone =
-      window.localStorage.getItem("security.phone") ||
+      readNamespacedItem(STORAGE_KEYS.securityPhone, userId)?.value ||
       (() => {
-        const profile = window.localStorage.getItem("onboarding-profile");
+        const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
         if (!profile) return null;
         try {
-          const parsed = JSON.parse(profile) as { phone?: string };
+          const parsed = JSON.parse(profile.value) as { phone?: string };
           return parsed.phone || null;
         } catch {
           return null;
@@ -33,7 +62,7 @@ export default function SecurityPage() {
     if (savedPhone) {
       setPhoneNumber(savedPhone);
     }
-  }, []);
+  }, [userId]);
 
   const startRecording = async () => {
     try {
@@ -109,22 +138,24 @@ export default function SecurityPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="John" defaultValue="John" />
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" placeholder="Your name" value={userName} readOnly />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Doe" defaultValue="Doe" />
+                  <Label htmlFor="email">
+                    <span className="flex items-center gap-2">
+                      <Mail className="size-4" />
+                      Email Address
+                    </span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={userEmail}
+                    readOnly
+                  />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">
-                  <span className="flex items-center gap-2">
-                    <Mail className="size-4" />
-                    Email Address
-                  </span>
-                </Label>
-                <Input id="email" type="email" placeholder="john@example.com" defaultValue="john@example.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">
@@ -140,9 +171,7 @@ export default function SecurityPage() {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   onBlur={() => {
-                    if (typeof window !== "undefined") {
-                      window.localStorage.setItem("security.phone", phoneNumber.trim());
-                    }
+                    persistPhone(phoneNumber.trim());
                   }}
                 />
               </div>
@@ -158,22 +187,7 @@ export default function SecurityPage() {
               <Button
                 className="mt-4"
                 onClick={() => {
-                  if (typeof window !== "undefined") {
-                    window.localStorage.setItem("security.phone", phoneNumber.trim());
-                    const profile = window.localStorage.getItem("onboarding-profile");
-                    try {
-                      const parsed = profile ? JSON.parse(profile) : {};
-                      window.localStorage.setItem(
-                        "onboarding-profile",
-                        JSON.stringify({ ...parsed, phone: phoneNumber.trim() })
-                      );
-                    } catch {
-                      window.localStorage.setItem(
-                        "onboarding-profile",
-                        JSON.stringify({ phone: phoneNumber.trim() })
-                      );
-                    }
-                  }
+                  persistPhone(phoneNumber.trim());
                 }}
               >
                 Save Changes

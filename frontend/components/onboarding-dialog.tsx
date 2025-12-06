@@ -29,8 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { authClient } from "@/lib/auth-client";
+import {
+  buildNamespacedKey,
+  readNamespacedItem,
+  STORAGE_KEYS,
+  writeNamespacedItem,
+} from "@/lib/local-storage";
 
-const STORAGE_KEY = "onboarding-profile";
 const COUNTRY_CODES = [
   { code: "+60", country: "Malaysia", flag: "https://flagcdn.com/w40/my.png" },
   { code: "+86", country: "China", flag: "https://flagcdn.com/w40/cn.png" },
@@ -62,6 +68,8 @@ type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 export function OnboardingDialog() {
   const [open, setOpen] = useState(false);
+  const session = authClient.useSession();
+  const userId = session.data?.user?.id;
 
   const form = useForm({
     resolver: zodResolver(onboardingSchema),
@@ -74,26 +82,32 @@ export function OnboardingDialog() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+
+    const saved = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
     if (!saved) {
       setOpen(true);
       return;
     }
     try {
-      const parsed = JSON.parse(saved) as Partial<OnboardingFormValues>;
+      const parsed = JSON.parse(saved.value) as Partial<OnboardingFormValues>;
       form.reset({
         countryCode: parsed.countryCode || "+60",
         phone: parsed.phone || "",
         balance: parsed.balance ?? 0,
       });
+      setOpen(false);
+
+      const targetKey = buildNamespacedKey(STORAGE_KEYS.onboarding, userId);
+      if (saved.key !== targetKey) {
+        writeNamespacedItem(STORAGE_KEYS.onboarding, saved.value, userId);
+      }
     } catch (error) {
       console.error("Failed to parse onboarding profile", error);
       setOpen(true);
     }
-  }, [form]);
+  }, [form, userId]);
 
   const onSubmit = (values: OnboardingFormValues) => {
-    if (typeof window === "undefined") return;
     const combinedPhone = `${values.countryCode} ${values.phone}`.trim();
     const payload = {
       countryCode: values.countryCode,
@@ -101,9 +115,17 @@ export function OnboardingDialog() {
       balance: values.balance,
       savedAt: new Date().toISOString(),
     };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    window.localStorage.setItem("security.phone", combinedPhone);
-    window.localStorage.setItem("balance.amount", String(values.balance));
+    writeNamespacedItem(
+      STORAGE_KEYS.onboarding,
+      JSON.stringify(payload),
+      userId
+    );
+    writeNamespacedItem(STORAGE_KEYS.securityPhone, combinedPhone, userId);
+    writeNamespacedItem(
+      STORAGE_KEYS.balanceAmount,
+      String(values.balance),
+      userId
+    );
     toast.success("Saved. Security phone and balance updated locally.");
     setOpen(false);
   };
@@ -114,7 +136,7 @@ export function OnboardingDialog() {
         <DialogHeader>
           <DialogTitle>Welcome! Let&apos;s finish your setup</DialogTitle>
           <DialogDescription>
-            Add a contact number and starting balance. This is stored in your browser while the backend is mocked.
+            Add a contact number and starting balance.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

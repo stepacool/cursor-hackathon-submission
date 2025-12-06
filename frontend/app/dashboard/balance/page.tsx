@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import { Wallet, Eye, EyeOff, RefreshCw, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
+import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
 
 export default function BalancePage() {
   const [showBalance, setShowBalance] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [checkingBalance, setCheckingBalance] = useState(12458.32);
+  const session = authClient.useSession();
+  const userId = session.data?.user?.id;
 
   // Mock data - in real app this would come from API
   const savingsBalance = 45230.15;
@@ -29,25 +33,25 @@ export default function BalancePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored =
-      window.localStorage.getItem("balance.amount") ||
+    const balanceValue =
+      readNamespacedItem(STORAGE_KEYS.balanceAmount, userId)?.value ||
       (() => {
-        const profile = window.localStorage.getItem("onboarding-profile");
+        const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
         if (!profile) return null;
         try {
-          const parsed = JSON.parse(profile) as { balance?: number };
-          return parsed.balance ? String(parsed.balance) : null;
+          const parsed = JSON.parse(profile.value) as { balance?: number };
+          return parsed.balance != null ? String(parsed.balance) : null;
         } catch {
           return null;
         }
       })();
-    if (stored) {
-      const parsed = Number(stored);
+    if (balanceValue) {
+      const parsed = Number(balanceValue);
       if (!Number.isNaN(parsed)) {
         setCheckingBalance(parsed);
       }
     }
-  }, []);
+  }, [userId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
