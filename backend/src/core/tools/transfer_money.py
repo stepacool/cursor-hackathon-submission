@@ -1,7 +1,7 @@
-from src.entrypoints.api.serializers import (
+from entrypoints.api.serializers import (
     TransferMoneyToolCallParameters,
 )
-from src.infrastructure.repositories import (
+from infrastructure.repositories import (
     get_account_by_title,
     transfer_money_between_accounts,
 )
