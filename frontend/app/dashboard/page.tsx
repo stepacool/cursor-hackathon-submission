@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -18,7 +18,15 @@ import { authClient } from "@/lib/auth-client";
 import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Transaction, TransactionsResponse } from "@/types/transaction";
+import type { BankAccount } from "@/types/bank-account";
 
 // Display transaction type for UI
 interface DisplayTransaction {
@@ -47,10 +55,10 @@ function convertToDisplayTransaction(
     category: txn.type,
     amount: isCredit ? amount : -amount,
     btcAmount: "BTC 0.00", // Calculate if you have BTC conversion
-    time: new Date(txn.created_at).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
+    time: new Date(txn.created_at).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
     }),
     date: formatTransactionDate(txn.created_at),
     icon: getTransactionIcon(txn.type),
@@ -60,19 +68,27 @@ function convertToDisplayTransaction(
 
 function getTransactionLabel(type: string): string {
   switch (type) {
-    case 'TRANSFER': return 'Money Transfer';
-    case 'DEPOSIT': return 'Balance Top Up';
-    case 'WITHDRAWAL': return 'Withdrawal';
-    default: return type;
+    case "TRANSFER":
+      return "Money Transfer";
+    case "DEPOSIT":
+      return "Balance Top Up";
+    case "WITHDRAWAL":
+      return "Withdrawal";
+    default:
+      return type;
   }
 }
 
 function getTransactionIcon(type: string): string {
   switch (type) {
-    case 'TRANSFER': return '💸';
-    case 'DEPOSIT': return '💳';
-    case 'WITHDRAWAL': return '💰';
-    default: return '💵';
+    case "TRANSFER":
+      return "💸";
+    case "DEPOSIT":
+      return "💳";
+    case "WITHDRAWAL":
+      return "💰";
+    default:
+      return "💵";
   }
 }
 
@@ -83,39 +99,79 @@ function formatTransactionDate(dateString: string): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === today.toDateString()) {
-    return `Today, ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}`;
+    return `Today, ${date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+    })}`;
   } else if (date.toDateString() === yesterday.toDateString()) {
-    return `Yesterday, ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}`;
+    return `Yesterday, ${date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+    })}`;
   } else {
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "long" });
   }
 }
 
 // Group transactions by date
 function groupTransactionsByDate(txns: DisplayTransaction[]) {
-  return txns.reduce(
-    (groups, txn) => {
-      const date = txn.date;
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(txn);
-      return groups;
-    },
-    {} as Record<string, DisplayTransaction[]>
-  );
+  return txns.reduce((groups, txn) => {
+    const date = txn.date;
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(txn);
+    return groups;
+  }, {} as Record<string, DisplayTransaction[]>);
 }
 
 export default function Dashboard() {
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [copied, setCopied] = useState(false);
   const [balance, setBalance] = useState(1456);
+  const [primaryAccount, setPrimaryAccount] = useState<BankAccount | null>(
+    null
+  );
+  const [allAccounts, setAllAccounts] = useState<BankAccount[]>([]);
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [openAccountDialog, setOpenAccountDialog] = useState(false);
 
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
+
+  // Function to fetch and update accounts
+  const fetchAndUpdateAccounts = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch("/api/accounts");
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const accounts = (
+          Array.isArray(data.data) ? data.data : [data.data]
+        ) as BankAccount[];
+
+        setAllAccounts(accounts);
+
+        if (accounts.length > 0) {
+          const activeAccount =
+            accounts.find((account) => account.status === "ACTIVE") ??
+            accounts[0];
+
+          setPrimaryAccount(activeAccount);
+
+          const parsedBalance = parseFloat(activeAccount.balance);
+          if (!Number.isNaN(parsedBalance)) {
+            setBalance(parsedBalance);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch accounts:", error);
+    }
+  }, [userId]);
 
   // Fetch transactions
   useEffect(() => {
@@ -124,17 +180,17 @@ export default function Dashboard() {
     async function fetchTransactions() {
       try {
         setIsLoadingTransactions(true);
-        const response = await fetch('/api/transactions');
+        const response = await fetch("/api/transactions");
         const data: TransactionsResponse = await response.json();
 
         if (data.success && data.data && userId) {
-          const displayTransactions = data.data.map(txn =>
+          const displayTransactions = data.data.map((txn) =>
             convertToDisplayTransaction(txn, userId)
           );
           setTransactions(displayTransactions);
         }
       } catch (error) {
-        console.error('Failed to fetch transactions:', error);
+        console.error("Failed to fetch transactions:", error);
       } finally {
         setIsLoadingTransactions(false);
       }
@@ -166,8 +222,58 @@ export default function Dashboard() {
     }
   }, [userId]);
 
-  const cardNumber = "7677 8545";
-  const fullCardNumber = `4532 8761 ${cardNumber}`;
+  // Fetch accounts to display on the card
+  useEffect(() => {
+    fetchAndUpdateAccounts();
+  }, [fetchAndUpdateAccounts]);
+
+  // Handle account change
+  const handleAccountChange = (accountId: string) => {
+    const selectedAccount = allAccounts.find(
+      (account) => account.id.toString() === accountId
+    );
+    if (selectedAccount) {
+      setPrimaryAccount(selectedAccount);
+      const parsedBalance = parseFloat(selectedAccount.balance);
+      if (!Number.isNaN(parsedBalance)) {
+        setBalance(parsedBalance);
+      }
+    }
+  };
+
+  // Helper function to mask account number
+  const maskAccountNumber = (accountNumber: string) => {
+    if (!accountNumber) return "****";
+    const last4 = accountNumber.slice(-4);
+    return `**** ${last4}`;
+  };
+
+  // Format account number to card number format (XXXX XXXX XXXX XXXX)
+  const formatCardNumber = (accountNumber: string | undefined): string => {
+    if (!accountNumber) return "**** **** **** ****";
+    
+    // Extract digits from account number (e.g., "ACC-1234567890" -> "1234567890")
+    const digits = accountNumber.replace(/\D/g, "");
+    
+    if (digits.length === 0) return "**** **** **** ****";
+    
+    // Pad or truncate to 16 digits for card format
+    let cardDigits = digits;
+    if (cardDigits.length < 16) {
+      // Pad with zeros if too short
+      cardDigits = cardDigits.padEnd(16, "0");
+    } else if (cardDigits.length > 16) {
+      // Take last 16 digits if too long
+      cardDigits = cardDigits.slice(-16);
+    }
+    
+    // Format as XXXX XXXX XXXX XXXX
+    return cardDigits.match(/.{1,4}/g)?.join(" ") || "**** **** **** ****";
+  };
+
+  // Get card number from primary account
+  const fullCardNumber = formatCardNumber(primaryAccount?.account_number);
+  const cardNumber = fullCardNumber.split(" ").slice(-2).join(" "); // Last 8 digits
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullCardNumber.replace(/\s/g, ""));
@@ -225,7 +331,8 @@ export default function Dashboard() {
         onOpenChange={setOpenAccountDialog}
         onSuccess={(account) => {
           console.log("Account created:", account);
-          // Here you can handle the created account, e.g., update state, make API call, etc.
+          // Refresh accounts list
+          fetchAndUpdateAccounts();
         }}
       />
 
@@ -234,15 +341,56 @@ export default function Dashboard() {
         <div className="flex w-full flex-col p-6 lg:w-3/5 xl:w-1/2 overflow-y-auto">
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
-            <h1 className="font-semibold text-2xl tracking-tight">My Virtual Cards</h1>
-            <button
-              type="button"
-              onClick={() => setOpenAccountDialog(true)}
-              className="flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm font-medium transition-all hover:bg-card hover:border-border"
-            >
-              Add new Card
-              <Plus className="size-4" />
-            </button>
+            <h1 className="font-semibold text-2xl tracking-tight">
+              My Virtual Cards
+            </h1>
+            <div className="flex items-center gap-2">
+              {allAccounts.length > 1 && (
+                <Select
+                  value={primaryAccount?.id.toString()}
+                  onValueChange={handleAccountChange}
+                >
+                  <SelectTrigger className="h-auto border-border/50 bg-card/50 px-4 py-2 text-sm font-medium hover:bg-card hover:border-border">
+                    <SelectValue>
+                      <span className="flex items-center gap-2">
+                        Change Card
+                      </span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAccounts.map((account) => (
+                      <SelectItem
+                        key={account.id}
+                        value={account.id.toString()}
+                      >
+                        <div className="flex items-center gap-3 py-1">
+                          <div className="flex size-8 items-center justify-center rounded-lg bg-muted/50">
+                            <Wallet className="size-4" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">
+                              {account.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {account.currency} • {maskAccountNumber(account.account_number)} •{" "}
+                              {formatCurrency(parseFloat(account.balance))}
+                            </p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <button
+                type="button"
+                onClick={() => setOpenAccountDialog(true)}
+                className="flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm font-medium transition-all hover:bg-card hover:border-border"
+              >
+                Add new Card
+                <Plus className="size-4" />
+              </button>
+            </div>
           </div>
 
           {/* Virtual Card */}
@@ -257,12 +405,17 @@ export default function Dashboard() {
               {/* Card Content */}
               <div className="relative z-10">
                 {/* Top Row */}
-                <div className="mb-12 flex items-start justify-between">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-                    <div className="size-8 rounded-lg bg-linear-to-br from-teal-400 to-teal-600" />
+                <div className="mb-8 flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <p className="text-sm text-white/60">Account</p>
+                    <p className="text-lg font-semibold text-white">
+                      {primaryAccount?.title ?? "Primary Account"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">
-                    <span className="text-sm font-medium text-white/80">USD</span>
+                    <span className="text-sm font-medium text-white/80">
+                      {primaryAccount?.currency ?? "USD"}
+                    </span>
                   </div>
                 </div>
 
@@ -270,7 +423,9 @@ export default function Dashboard() {
                 <div className="mb-6">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xl tracking-widest text-white/90">
-                      {showCardNumber ? fullCardNumber : `**** **** ${cardNumber}`}
+                      {showCardNumber
+                        ? fullCardNumber
+                        : `**** **** ${cardNumber}`}
                     </span>
                     <button
                       type="button"
@@ -307,11 +462,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Wifi className="size-6 rotate-90 text-white/60" />
-                    <svg
-                      viewBox="0 0 50 16"
-                      className="h-6 w-auto"
-                      fill="none"
-                    >
+                    <svg viewBox="0 0 50 16" className="h-6 w-auto" fill="none">
                       <path
                         d="M46.5 8A8 8 0 1 1 30.5 8a8 8 0 0 1 16 0Z"
                         fill="#ED0006"
@@ -359,17 +510,23 @@ export default function Dashboard() {
         {/* Right Section - Transactions */}
         <div className="hidden border-l border-border/50 bg-card/30 lg:flex lg:w-2/5 xl:w-1/2 flex-col overflow-hidden">
           <div className="p-6 pb-4">
-            <h2 className="font-semibold text-xl tracking-tight">Transactions</h2>
+            <h2 className="font-semibold text-xl tracking-tight">
+              Transactions
+            </h2>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             {isLoadingTransactions ? (
               <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-muted-foreground">Loading transactions...</p>
+                <p className="text-sm text-muted-foreground">
+                  Loading transactions...
+                </p>
               </div>
             ) : transactions.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-muted-foreground">No transactions yet</p>
+                <p className="text-sm text-muted-foreground">
+                  No transactions yet
+                </p>
               </div>
             ) : (
               Object.entries(groupedTransactions).map(([date, txns]) => (

@@ -3,6 +3,7 @@ export interface BankAccount {
   id: number;
   account_number: string;
   user_id: string;
+  title: string;
   balance: string; // decimal comes as string from MySQL
   currency: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
@@ -19,6 +20,7 @@ export interface BankAccountsResponse {
 }
 
 export interface CreateAccountRequest {
+  title: string;
   currency?: string;
   initialBalance?: number;
 }

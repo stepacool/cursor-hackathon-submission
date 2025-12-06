@@ -35,6 +35,7 @@ import type { BankAccount } from "@/types/bank-account";
 interface Account {
   id: number;
   account_number: string;
+  title: string;
   balance: number;
   currency: string;
   status: "ACTIVE" | "SUSPENDED" | "CLOSED";
@@ -64,6 +65,7 @@ export default function BalancePage() {
         const mappedAccounts: Account[] = (result.data as BankAccount[]).map(acc => ({
           id: acc.id,
           account_number: acc.account_number,
+          title: acc.title,
           balance: parseFloat(acc.balance),
           currency: acc.currency,
           status: acc.status,
@@ -373,12 +375,11 @@ export default function BalancePage() {
                             <Wallet className="size-6" />
                           </div>
                           <div className="text-left">
-                            <p className="text-sm text-white/60">
-                              {selectedAccount.currency} Account
+                            <p className="text-sm font-semibold text-white">
+                              {selectedAccount.title}
                             </p>
-                            <p className="flex items-center gap-2 text-sm text-white/80">
-                              <CreditCard className="size-3" />
-                              {maskAccountNumber(selectedAccount.account_number)}
+                            <p className="flex items-center gap-2 text-xs text-white/60">
+                              {selectedAccount.currency} • {maskAccountNumber(selectedAccount.account_number)}
                             </p>
                           </div>
                         </div>
@@ -397,9 +398,9 @@ export default function BalancePage() {
                                 <Wallet className="size-5" />
                               </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{account.currency} Account</p>
+                                <p className="font-semibold text-sm">{account.title}</p>
                                 <p className="text-xs text-white/60">
-                                  {maskAccountNumber(account.account_number)} •{" "}
+                                  {account.currency} • {maskAccountNumber(account.account_number)} •{" "}
                                   {formatCurrency(account.balance, account.currency)}
                                 </p>
                               </div>
@@ -532,7 +533,7 @@ export default function BalancePage() {
               All Transactions
             </DialogTitle>
             <DialogDescription>
-              Complete transaction history for {selectedAccount.currency} Account ({maskAccountNumber(selectedAccount.account_number)})
+              Complete transaction history for {selectedAccount.title} ({maskAccountNumber(selectedAccount.account_number)})
             </DialogDescription>
           </DialogHeader>
           

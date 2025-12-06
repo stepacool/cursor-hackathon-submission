@@ -1,3 +1,4 @@
+import { phoneNumber } from "better-auth/plugins";
 import { relations } from "drizzle-orm";
 import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
@@ -15,6 +16,9 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
+  isOnboardingCompleted: boolean("is_onboarding_completed")
+    .$defaultFn(() => false).notNull(),
+  phoneNumber: text("phone_number"),
 });
 
 export const session = pgTable("session", {

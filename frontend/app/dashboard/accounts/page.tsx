@@ -37,6 +37,7 @@ type AccountStatus = "ACTIVE" | "SUSPENDED" | "CLOSED";
 interface Account {
   id: number;
   account_number: string;
+  title: string;
   balance: number;
   currency: string;
   status: AccountStatus;
@@ -116,6 +117,7 @@ export default function AccountsPage() {
         const mappedAccounts: Account[] = (result.data as BankAccount[]).map(acc => ({
           id: acc.id,
           account_number: acc.account_number,
+          title: acc.title,
           balance: parseFloat(acc.balance),
           currency: acc.currency,
           status: acc.status,
@@ -140,6 +142,7 @@ export default function AccountsPage() {
     const account: Account = {
       id: newAccount.id,
       account_number: newAccount.account_number,
+      title: newAccount.title,
       balance: parseFloat(newAccount.balance),
       currency: newAccount.currency,
       status: newAccount.status,
@@ -791,9 +794,9 @@ function AccountCard({
 
         {/* Account Info */}
         <div className="mb-4">
-          <p className="font-semibold">{account.currency} Account</p>
+          <p className="font-semibold text-lg">{account.title}</p>
           <p className="text-sm text-muted-foreground">
-            {maskAccountNumber(account.account_number)}
+            {account.currency} • {maskAccountNumber(account.account_number)}
           </p>
         </div>
 

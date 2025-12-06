@@ -30,12 +30,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { authClient } from "@/lib/auth-client";
-import {
-  buildNamespacedKey,
-  readNamespacedItem,
-  STORAGE_KEYS,
-  writeNamespacedItem,
-} from "@/lib/local-storage";
 
 const COUNTRY_CODES = [
   { code: "+60", country: "Malaysia", flag: "https://flagcdn.com/w40/my.png" },
@@ -55,99 +49,169 @@ const onboardingSchema = z.object({
   phone: z
     .string()
     .trim()
+    .min(1, "Phone number is required")
     .min(8, "Please enter a valid phone number")
     .regex(/^[0-9+\-\s]+$/, "Only numbers, plus, dashes, or spaces are allowed"),
-  balance: z.coerce
-    .number({
-      message: "Balance must be a number",
+  accountTitle: z
+    .string()
+    .trim()
+    .min(1, "Account title is required")
+    .max(100, "Account title must be less than 100 characters"),
+  balance: z
+    .string()
+    .min(1, "Starting balance is required")
+    .refine((val) => !isNaN(Number(val)), {
+      message: "Starting balance must be a valid number",
     })
-    .min(0, "Balance must be at least 0"),
+    .refine((val) => Number(val) >= 0, {
+      message: "Balance must be at least 0",
+    }),
 });
 
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 export function OnboardingDialog() {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
 
-  const form = useForm({
+  const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       countryCode: "+60",
       phone: "",
-      balance: 0,
+      accountTitle: "",
+      balance: "",
     },
   });
 
+  // Fetch onboarding status from the server
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!userId) return;
 
-    const saved = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
-    if (!saved) {
-      setOpen(true);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(saved.value) as Partial<OnboardingFormValues>;
-      form.reset({
-        countryCode: parsed.countryCode || "+60",
-        phone: parsed.phone || "",
-        balance: parsed.balance ?? 0,
-      });
-      setOpen(false);
-
-      const targetKey = buildNamespacedKey(STORAGE_KEYS.onboarding, userId);
-      if (saved.key !== targetKey) {
-        writeNamespacedItem(STORAGE_KEYS.onboarding, saved.value, userId);
+    const checkOnboardingStatus = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/onboarding");
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            const isCompleted = result.data?.isOnboardingCompleted ?? false;
+            setOpen(!isCompleted);
+          } else {
+            // If there's an error, assume onboarding is not completed
+            setOpen(true);
+          }
+        } else {
+          setOpen(true);
+        }
+      } catch (error) {
+        console.error("Failed to check onboarding status:", error);
+        setOpen(true);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to parse onboarding profile", error);
-      setOpen(true);
-    }
-  }, [form, userId]);
-
-  const onSubmit = (values: OnboardingFormValues) => {
-    const combinedPhone = `${values.countryCode} ${values.phone}`.trim();
-    const payload = {
-      countryCode: values.countryCode,
-      phone: combinedPhone,
-      balance: values.balance,
-      savedAt: new Date().toISOString(),
     };
-    writeNamespacedItem(
-      STORAGE_KEYS.onboarding,
-      JSON.stringify(payload),
-      userId
-    );
-    writeNamespacedItem(STORAGE_KEYS.securityPhone, combinedPhone, userId);
-    writeNamespacedItem(
-      STORAGE_KEYS.balanceAmount,
-      String(values.balance),
-      userId
-    );
-    toast.success("Saved. Security phone and balance updated locally.");
-    setOpen(false);
+
+    checkOnboardingStatus();
+  }, [userId]);
+
+  const onSubmit = async (values: OnboardingFormValues) => {
+    try {
+      setIsSubmitting(true);
+      const combinedPhone = `${values.countryCode} ${values.phone}`.trim();
+
+      const response = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phoneNumber: combinedPhone,
+          accountTitle: values.accountTitle,
+          initialBalance: Number(values.balance),
+          currency: "USD",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Failed to complete onboarding");
+        return;
+      }
+
+      toast.success("Welcome! Your account has been set up successfully.");
+      setOpen(false);
+      
+      // Refresh the page to update the session
+      window.location.reload();
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Don't render the dialog until we've checked the onboarding status
+  if (isLoading) {
+    return null;
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={() => {
+      // Prevent closing the dialog
+    }}>
+      <DialogContent
+        className="sm:max-w-[500px]"
+        onInteractOutside={(e) => {
+          // Prevent closing on outside click
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing on escape key
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Welcome! Let&apos;s finish your setup</DialogTitle>
           <DialogDescription>
-            Add a contact number and starting balance.
+            Please provide your account details to complete your setup. All fields are required.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              name="accountTitle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Account title <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., My Main Account"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid gap-3 sm:grid-cols-[200px_minmax(0,1fr)]">
               <FormField
                 control={form.control}
                 name="countryCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country code</FormLabel>
+                    <FormLabel>
+                      Country code <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -178,9 +242,15 @@ export function OnboardingDialog() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone number</FormLabel>
+                    <FormLabel>
+                      Phone number <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="138 0000 0000" {...field} />
+                      <Input
+                        placeholder="138 0000 0000"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,30 +262,29 @@ export function OnboardingDialog() {
               name="balance"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Starting balance</FormLabel>
+                  <FormLabel>
+                    Starting balance (USD) <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min={0}
                       step="0.01"
                       placeholder="1000"
+                      disabled={isSubmitting}
                       {...field}
-                      value={(field.value as number | string) ?? ""}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setOpen(false)}
-              >
-                Remind me later
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Setting up..." : "Complete setup"}
               </Button>
-              <Button type="submit">Save info</Button>
             </div>
           </form>
         </Form>

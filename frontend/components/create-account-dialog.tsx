@@ -59,6 +59,7 @@ export function CreateAccountDialog({
   onSuccess,
 }: CreateAccountDialogProps) {
   const [newAccountType, setNewAccountType] = useState<AccountType>("checking");
+  const [title, setTitle] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [initialDeposit, setInitialDeposit] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -75,6 +76,7 @@ export function CreateAccountDialog({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          title: title.trim(),
           currency: currency.toUpperCase(),
           initialBalance: parseFloat(initialDeposit) || 0,
         }),
@@ -88,6 +90,7 @@ export function CreateAccountDialog({
 
       setCreatedAccount(result.data);
       onOpenChange(false);
+      setTitle("");
       setCurrency("USD");
       setInitialDeposit("");
       setNewAccountType("checking");
@@ -128,6 +131,22 @@ export function CreateAccountDialog({
           </DialogHeader>
 
           <div className="space-y-6 py-4">
+            {/* Account Title */}
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Account Title
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Main Checking, Savings, Business Account"
+                className="h-12 rounded-xl"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Give your account a descriptive name
+              </p>
+            </div>
+
             {/* Currency Selection */}
             <div>
               <label className="mb-2 block text-sm font-medium">
@@ -177,7 +196,7 @@ export function CreateAccountDialog({
             </Button>
             <Button
               onClick={handleOpenAccount}
-              disabled={!currency.trim() || isProcessing}
+              disabled={!title.trim() || !currency.trim() || isProcessing}
               className="rounded-xl bg-linear-to-r from-teal-500 to-cyan-600 text-white hover:from-teal-600 hover:to-cyan-700"
             >
               {isProcessing ? (
@@ -199,6 +218,9 @@ export function CreateAccountDialog({
           className="max-w-sm rounded-2xl text-center"
           showCloseButton={false}
         >
+          <DialogHeader>
+            <DialogTitle className="sr-only">Account Created</DialogTitle>
+          </DialogHeader>
           <div className="py-6">
             {/* Success Animation */}
             <div className="relative mx-auto mb-6 size-20">
@@ -216,6 +238,12 @@ export function CreateAccountDialog({
 
             {createdAccount && (
               <div className="mb-6 space-y-3">
+                <div className="rounded-xl bg-muted/30 p-4 text-left">
+                  <p className="text-sm text-muted-foreground">Account Title</p>
+                  <p className="font-medium">
+                    {createdAccount.title}
+                  </p>
+                </div>
                 <div className="rounded-xl bg-muted/30 p-4 text-left">
                   <p className="text-sm text-muted-foreground">Account Number</p>
                   <p className="font-mono font-medium">

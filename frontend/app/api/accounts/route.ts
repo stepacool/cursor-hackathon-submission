@@ -25,6 +25,7 @@ export async function GET(request: Request) {
           id,
           account_number,
           user_id,
+          title,
           balance,
           currency,
           status,
@@ -67,7 +68,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { currency = 'USD', initialBalance = 0 } = body;
+    const { title, currency = 'USD', initialBalance = 0 } = body;
+
+    // Validate title
+    if (!title || !title.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Account title is required' },
+        { status: 400 },
+      );
+    }
 
     // Validate currency (basic validation)
     if (!currency || currency.length !== 3) {
@@ -97,15 +106,17 @@ export async function POST(request: Request) {
         `INSERT INTO bank_accounts (
           account_number,
           user_id,
+          title,
           balance,
           currency,
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
         [
           accountNumber,
           session.user.id,
+          title.trim(),
           initialBalance,
           currency.toUpperCase(),
           now,
@@ -119,6 +130,7 @@ export async function POST(request: Request) {
           id,
           account_number,
           user_id,
+          title,
           balance,
           currency,
           status,
