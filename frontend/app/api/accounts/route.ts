@@ -27,7 +27,6 @@ export async function GET(request: Request) {
           user_id,
           title,
           balance,
-          currency,
           status,
           created_at,
           updated_at,
@@ -68,20 +67,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, currency = 'USD', initialBalance = 0 } = body;
+    const { title, initialBalance = 0 } = body;
 
     // Validate title
     if (!title || !title.trim()) {
       return NextResponse.json(
         { success: false, error: 'Account title is required' },
-        { status: 400 },
-      );
-    }
-
-    // Validate currency (basic validation)
-    if (!currency || currency.length !== 3) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid currency code' },
         { status: 400 },
       );
     }
@@ -108,17 +99,15 @@ export async function POST(request: Request) {
           user_id,
           title,
           balance,
-          currency,
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
         [
           accountNumber,
           session.user.id,
           title.trim(),
           initialBalance,
-          currency.toUpperCase(),
           now,
           now
         ]
@@ -132,7 +121,6 @@ export async function POST(request: Request) {
           user_id,
           title,
           balance,
-          currency,
           status,
           created_at,
           updated_at,

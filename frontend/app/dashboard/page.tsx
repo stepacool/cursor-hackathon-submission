@@ -372,7 +372,7 @@ export default function Dashboard() {
                               {account.title}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {account.currency} • {maskAccountNumber(account.account_number)} •{" "}
+                              USD • {maskAccountNumber(account.account_number)} •{" "}
                               {formatCurrency(parseFloat(account.balance))}
                             </p>
                           </div>
@@ -414,7 +414,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">
                     <span className="text-sm font-medium text-white/80">
-                      {primaryAccount?.currency ?? "USD"}
+                      USD
                     </span>
                   </div>
                 </div>

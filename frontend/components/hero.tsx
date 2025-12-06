@@ -13,11 +13,30 @@ export function Hero() {
   }, []);
 
   return (
-    <section id="home" className="relative">
+    <section id="home" className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-80 blur-3xl transition-opacity dark:hidden"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 20%, rgba(59,130,246,0.25), transparent 55%), radial-gradient(circle at 80% 0%, rgba(16,185,129,0.35), transparent 45%), radial-gradient(circle at 10% 90%, rgba(236,72,153,0.35), transparent 50%)",
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hidden opacity-60 blur-3xl transition-opacity dark:block"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 30%, rgba(56,189,248,0.25), transparent 55%), radial-gradient(circle at 75% 20%, rgba(129,140,248,0.35), transparent 50%), radial-gradient(circle at 50% 90%, rgba(248,113,113,0.25), transparent 65%)",
+            backgroundColor: "rgb(2,6,23)",
+          }}
+        />
+      </div>
       <div className="animation-delay-8 animate-fadeIn flex flex-col items-center justify-center px-4 text-center">
-        <div className="z-10 mb-6 mt-10 sm:justify-center md:mb-4 md:mt-20">
+        {/* <div className="z-10 mb-6 mt-10 sm:justify-center md:mb-4 md:mt-20">
           <div className="relative flex items-center whitespace-nowrap rounded-full border bg-popover px-3 py-1 text-xs leading-6  text-primary/60 ">
-            <Shapes className="h-5 p-1" /> Introducing Digital Bank.
+            <Shapes className="h-5 p-1" /> Introducing Banster.
             <Link
               href="/dashboard"
               className="hover:text-primary ml-1 flex items-center font-semibold"
@@ -29,9 +48,9 @@ export function Hero() {
               </span>
             </Link>
           </div>
-        </div>
+        </div> */}
 
-        <div className="mb-10 mt-4  md:mt-6">
+        <div className="mb-10 mt-10 md:mt-16">
           <div className="px-2">
             <div className="relative mx-auto h-full max-w-7xl border border-primary/20 p-6 mask-[radial-gradient(800rem_96rem_at_center,white,transparent)] md:px-12 md:py-20">
               <h1 className="flex  select-none flex-col  px-3 py-2 text-center text-5xl font-semibold leading-none tracking-tight md:flex-col md:text-8xl lg:flex-row lg:text-8xl">
@@ -74,13 +93,13 @@ export function Hero() {
           </p>
           <div className="flex justify-center gap-2">
             <Link href="/dashboard">
-              <Button variant="default" size="lg">
+              <Button variant="default" size="lg" className="h-12 px-8 text-base">
                 Dashboard
               </Button>
             </Link>
-            <Link href="/login">
-              <Button variant="outline" size="lg">
-                Sign In
+            <Link href="/signup">
+              <Button variant="outline" size="lg" className="h-12 px-8 text-base">
+                Open Account
               </Button>
             </Link>
           </div>
@@ -93,4 +112,3 @@ export function Hero() {
     </section>
   );
 }
-

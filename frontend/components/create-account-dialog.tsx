@@ -60,7 +60,6 @@ export function CreateAccountDialog({
 }: CreateAccountDialogProps) {
   const [newAccountType, setNewAccountType] = useState<AccountType>("checking");
   const [title, setTitle] = useState("");
-  const [currency, setCurrency] = useState("USD");
   const [initialDeposit, setInitialDeposit] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
@@ -77,7 +76,6 @@ export function CreateAccountDialog({
         },
         body: JSON.stringify({
           title: title.trim(),
-          currency: currency.toUpperCase(),
           initialBalance: parseFloat(initialDeposit) || 0,
         }),
       });
@@ -91,7 +89,6 @@ export function CreateAccountDialog({
       setCreatedAccount(result.data);
       onOpenChange(false);
       setTitle("");
-      setCurrency("USD");
       setInitialDeposit("");
       setNewAccountType("checking");
       setSuccessDialog(true);
@@ -147,23 +144,6 @@ export function CreateAccountDialog({
               </p>
             </div>
 
-            {/* Currency Selection */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Currency
-              </label>
-              <Input
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                placeholder="USD"
-                maxLength={3}
-                className="h-12 rounded-xl uppercase"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Enter 3-letter currency code (e.g., USD, EUR, GBP)
-              </p>
-            </div>
-
             {/* Initial Deposit */}
             <div>
               <label className="mb-2 block text-sm font-medium">
@@ -171,7 +151,7 @@ export function CreateAccountDialog({
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {currency}
+                  $
                 </span>
                 <Input
                   type="number"
@@ -180,7 +160,7 @@ export function CreateAccountDialog({
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="h-12 rounded-xl pl-16"
+                  className="h-12 rounded-xl pl-10"
                 />
               </div>
             </div>
@@ -196,7 +176,7 @@ export function CreateAccountDialog({
             </Button>
             <Button
               onClick={handleOpenAccount}
-              disabled={!title.trim() || !currency.trim() || isProcessing}
+              disabled={!title.trim() || isProcessing}
               className="rounded-xl bg-linear-to-r from-teal-500 to-cyan-600 text-white hover:from-teal-600 hover:to-cyan-700"
             >
               {isProcessing ? (
@@ -253,7 +233,7 @@ export function CreateAccountDialog({
                 <div className="rounded-xl bg-muted/30 p-4 text-left">
                   <p className="text-sm text-muted-foreground">Balance</p>
                   <p className="font-mono font-medium">
-                    {createdAccount.currency} {parseFloat(createdAccount.balance).toFixed(2)}
+                    ${parseFloat(createdAccount.balance).toFixed(2)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-muted/30 p-4 text-left">

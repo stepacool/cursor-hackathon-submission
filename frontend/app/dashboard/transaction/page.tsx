@@ -79,7 +79,7 @@ export default function TransactionPage() {
           title: account.title,
           accountNumber: account.account_number,
           balance: safeBalance,
-          currency: account.currency || "USD",
+          currency: "USD", // Default currency since BankAccount doesn't have currency field
           status: account.status,
           icon,
         };

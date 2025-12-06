@@ -39,7 +39,6 @@ interface Account {
   account_number: string;
   title: string;
   balance: number;
-  currency: string;
   status: AccountStatus;
   created_at: string;
   updated_at: string;
@@ -67,10 +66,10 @@ const statusConfig = {
   },
 };
 
-const formatCurrency = (amount: number, currency: string = 'USD') => {
+const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency,
+    currency: "USD",
   }).format(amount);
 };
 
@@ -119,7 +118,6 @@ export default function AccountsPage() {
           account_number: acc.account_number,
           title: acc.title,
           balance: parseFloat(acc.balance),
-          currency: acc.currency,
           status: acc.status,
           created_at: acc.created_at,
           updated_at: acc.updated_at,
@@ -144,7 +142,6 @@ export default function AccountsPage() {
       account_number: newAccount.account_number,
       title: newAccount.title,
       balance: parseFloat(newAccount.balance),
-      currency: newAccount.currency,
       status: newAccount.status,
       created_at: newAccount.created_at,
       updated_at: newAccount.updated_at,
@@ -472,7 +469,7 @@ export default function AccountsPage() {
                   {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
+                  {formatCurrency(selectedAccount.balance)}
                 </p>
               </div>
 
@@ -486,7 +483,7 @@ export default function AccountsPage() {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Remaining balance of{" "}
-                      {formatCurrency(selectedAccount.balance, selectedAccount.currency)} will be
+                      {formatCurrency(selectedAccount.balance)} will be
                       transferred to your primary account.
                     </p>
                   </div>
@@ -563,7 +560,7 @@ export default function AccountsPage() {
                   {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
+                  {formatCurrency(selectedAccount.balance)}
                 </p>
               </div>
 
@@ -679,7 +676,7 @@ export default function AccountsPage() {
                   {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
+                  {formatCurrency(selectedAccount.balance)}
                 </p>
               </div>
 
@@ -796,14 +793,14 @@ function AccountCard({
         <div className="mb-4">
           <p className="font-semibold text-lg">{account.title}</p>
           <p className="text-sm text-muted-foreground">
-            {account.currency} • {maskAccountNumber(account.account_number)}
+            {maskAccountNumber(account.account_number)}
           </p>
         </div>
 
         {/* Balance */}
         <div className="mb-4">
           <p className="text-2xl font-bold">
-            {formatCurrency(account.balance, account.currency)}
+            {formatCurrency(account.balance)}
           </p>
           <p className="text-xs text-muted-foreground">
             Opened {formatDate(account.created_at)}

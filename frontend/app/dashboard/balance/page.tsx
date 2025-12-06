@@ -167,7 +167,7 @@ export default function BalancePage() {
             account_number: acc.account_number,
             title: acc.title,
             balance: parseFloat(acc.balance),
-            currency: acc.currency,
+            currency: "USD", // Default currency since BankAccount doesn't have currency field
             status: acc.status,
             created_at: acc.created_at,
           })

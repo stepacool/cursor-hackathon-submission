@@ -5,7 +5,6 @@ export interface BankAccount {
   user_id: string;
   title: string;
   balance: string; // decimal comes as string from MySQL
-  currency: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
   created_at: string; // datetime comes as string from MySQL
   updated_at: string;
@@ -21,7 +20,6 @@ export interface BankAccountsResponse {
 
 export interface CreateAccountRequest {
   title: string;
-  currency?: string;
   initialBalance?: number;
 }
 
