@@ -43,7 +43,7 @@ async def get_call_by_phone_number(phone_number: str) -> Optional[Call]:
     async with session_maker() as session:
         stmt = select(Call).where(
             Call.phone_number == phone_number,
-        ).order_by(Call.created_at.desc())
+        ).order_by(Call.created_at.desc()).limit(1)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
