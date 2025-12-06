@@ -144,11 +144,10 @@ export function MinimalFooter() {
 				<div className="bg-border absolute inset-x-0 h-px w-full" />
 				<div className="flex max-w-4xl flex-col justify-between gap-2 pb-5 pt-2">
 					<p className="text-muted-foreground text-center font-thin text-sm">
-						© Banster. All rights reserved {year}
+						© Banksta. All rights reserved {year}
 					</p>
 				</div>
 			</div>
 		</footer>
 	);
 }
-

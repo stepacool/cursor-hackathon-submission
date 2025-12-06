@@ -20,7 +20,7 @@ export default function Home() {
             <Link href="/" className="flex items-center">
               <Image
                 src="/logo.png"
-                alt="Banster - First AI Banking"
+                alt="Banksta - First AI Banking"
                 width={120}
                 height={40}
                 className="h-10 w-auto"
@@ -53,7 +53,7 @@ export default function Home() {
               Testimonials
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-base-content sm:text-4xl">
-              Customers rave about their experience with Banster
+              Customers rave about their experience with Banksta
             </h2>
             <p className="mt-2 text-base text-base-content/70">
               Tap on a card or use the controls to browse more stories.
@@ -75,7 +75,7 @@ export default function Home() {
               { text: "money" },
               { text: "securely" },
               { text: "with" },
-              { text: "Banster", className: "text-primary" },
+              { text: "Banksta", className: "text-primary" },
             ]}
           />
           <p className="text-base text-base-content/70 sm:text-lg">

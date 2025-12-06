@@ -254,14 +254,14 @@ export function Sidebar() {
           <div className="relative size-10 rounded-xl overflow-hidden">
             <Image
               src="/logo.png"
-              alt="Banster digital banking"
+              alt="Banksta digital banking"
               width={40}
               height={40}
               className="object-cover"
               priority
             />
           </div>
-          <span className="font-bold text-xl tracking-tight">Banster</span>
+          <span className="font-bold text-xl tracking-tight">Banksta</span>
         </div>
 
         {/* Search */}
@@ -338,7 +338,7 @@ export function Sidebar() {
             Get a Call
           </Button>
           <p className="mt-3 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            © 2025 Banster
+            © 2025 Banksta
           </p>
         </div>
       </aside>

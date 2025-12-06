@@ -13,14 +13,14 @@ export default function LoginPage() {
         >
           <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Image
-              alt="Banster Logo"
+              alt="Banksta Logo"
               height={50}
               priority
               src={"/better-auth-starter.png"}
               width={50}
             />
           </div>
-          Banster
+          Banksta
         </Link>
         <Suspense>
           <ResetPasswordForm />
