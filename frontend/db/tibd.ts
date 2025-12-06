@@ -9,7 +9,7 @@ declare global {
 const mysqlPool =
   globalThis.__globalMysql ??
   mysql.createPool({
-    uri: process.env.ASYNC_DB_DSN as string || 'mysql://ThihWp1nSaKQzsm.root:5utCdAmQEEYFv86n@gateway01.eu-central-1.prod.aws.tidbcloud.com:4000/test',
+    uri: process.env.ASYNC_DB_DSN as string || 'mysql://2qBnpKDWw7AZ2Pd.root:sRyFA9oMAb5UCSaI@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test',
     waitForConnections: true,
     connectionLimit: 1, // CRITICAL for serverless
     queueLimit: 0,
