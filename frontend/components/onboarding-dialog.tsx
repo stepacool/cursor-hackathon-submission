@@ -153,7 +153,7 @@ export function OnboardingDialog() {
           phoneNumber: combinedPhone,
           accountTitle: values.accountTitle,
           initialBalance: Number(values.balance),
-          currency: "USD",
+          currency: "MYR",
         }),
       });
 
@@ -284,7 +284,7 @@ export function OnboardingDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Starting balance (USD) <span className="text-destructive">*</span>
+                    Starting balance (MYR) <span className="text-destructive">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input

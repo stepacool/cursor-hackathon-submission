@@ -5,7 +5,6 @@ export interface Transaction {
   from_account_id: number | null;
   to_account_id: number | null;
   amount: string; // decimal comes as string from MySQL
-  currency: string;
   type: 'TRANSFER' | 'DEPOSIT' | 'WITHDRAWAL';
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   description: string | null;

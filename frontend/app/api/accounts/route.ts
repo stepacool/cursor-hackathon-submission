@@ -102,7 +102,7 @@ export async function POST(request: Request) {
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?)`,
         [
           accountNumber,
           session.user.id,

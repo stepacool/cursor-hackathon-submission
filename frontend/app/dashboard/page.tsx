@@ -292,9 +292,9 @@ export default function Dashboard() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-MY", {
       style: "currency",
-      currency: "USD",
+      currency: "MYR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Math.abs(amount));
@@ -382,7 +382,7 @@ export default function Dashboard() {
                               {account.title}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              USD • {maskAccountNumber(account.account_number)} •{" "}
+                              MYR • {maskAccountNumber(account.account_number)} •{" "}
                               {formatCurrency(parseFloat(account.balance))}
                             </p>
                           </div>
@@ -424,7 +424,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">
                     <span className="text-sm font-medium text-white/80">
-                      USD
+                      MYR
                     </span>
                   </div>
                 </div>
@@ -467,7 +467,7 @@ export default function Dashboard() {
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="text-3xl font-bold text-white">
-                      ${balance.toLocaleString()}
+                      {formatCurrency(balance)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

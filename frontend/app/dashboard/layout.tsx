@@ -27,8 +27,8 @@ export default function DashboardLayout({
           <div className="flex items-center gap-3">
             {/* Crypto Price */}
             <div className="hidden items-center gap-2 rounded-full bg-card/50 px-3 py-1.5 text-sm md:flex">
-              <span className="text-muted-foreground">BTC/USD</span>
-              <span className="font-mono font-medium text-emerald-500">$43,521.84</span>
+              <span className="text-muted-foreground">BTC/MYR</span>
+              <span className="font-mono font-medium text-emerald-500">RM 43,521,123.84</span>
             </div>
             <div className="h-6 w-px bg-border/50" />
             <Logout />

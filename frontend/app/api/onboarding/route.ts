@@ -1,19 +1,18 @@
-import {auth} from "@/lib/auth";
-import {headers} from "next/headers";
-import {NextResponse} from "next/server";
-import {db} from "@/db/drizzle";
-import {user} from "@/db/schema";
-import {eq} from "drizzle-orm";
-
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { db } from "@/db/drizzle";
+import { user } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 },
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
@@ -35,10 +34,10 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Error fetching onboarding data:', error);
+    console.error("Error fetching onboarding data:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch onboarding data' },
-      { status: 500 },
+      { success: false, error: "Failed to fetch onboarding data" },
+      { status: 500 }
     );
   }
 }
@@ -47,41 +46,48 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 },
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
     const body = await request.json();
-    const { phoneNumber, initialBalance, accountTitle, currency = 'USD' } = body;
+    const { phoneNumber, initialBalance, accountTitle } = body;
 
     // Validate required fields
     if (!phoneNumber || !phoneNumber.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Phone number is required' },
-        { status: 400 },
+        { success: false, error: "Phone number is required" },
+        { status: 400 }
       );
     }
 
     if (!accountTitle || !accountTitle.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Account title is required' },
-        { status: 400 },
+        { success: false, error: "Account title is required" },
+        { status: 400 }
       );
     }
 
-    if (initialBalance === undefined || initialBalance === null || initialBalance < 0) {
+    if (
+      initialBalance === undefined ||
+      initialBalance === null ||
+      initialBalance < 0
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Initial balance is required and must be at least 0' },
-        { status: 400 },
+        {
+          success: false,
+          error: "Initial balance is required and must be at least 0",
+        },
+        { status: 400 }
       );
     }
 
     // Import mysqlPool dynamically
-    const mysqlPool = (await import('@/db/tibd')).default;
+    const mysqlPool = (await import("@/db/tibd")).default;
     const connection = await mysqlPool.getConnection();
 
     try {
@@ -96,19 +102,17 @@ export async function POST(request: Request) {
           user_id,
           title,
           balance,
-          currency,
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
         [
           accountNumber,
           session.user.id,
           accountTitle.trim(),
           initialBalance,
-          currency.toUpperCase(),
           now,
-          now
+          now,
         ]
       );
 
@@ -120,7 +124,6 @@ export async function POST(request: Request) {
           user_id,
           title,
           balance,
-          currency,
           status,
           created_at,
           updated_at,
@@ -146,7 +149,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: 'Onboarding completed successfully',
+        message: "Onboarding completed successfully",
         data: {
           user: {
             phoneNumber: phoneNumber.trim(),
@@ -157,17 +160,17 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       connection.release();
-      console.error('Error creating bank account or updating user:', error);
+      console.error("Error creating bank account or updating user:", error);
       return NextResponse.json(
-        { success: false, error: 'Failed to complete onboarding' },
-        { status: 500 },
+        { success: false, error: "Failed to complete onboarding" },
+        { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Error completing onboarding:', error);
+    console.error("Error completing onboarding:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to complete onboarding' },
-      { status: 500 },
+      { success: false, error: "Failed to complete onboarding" },
+      { status: 500 }
     );
   }
 }

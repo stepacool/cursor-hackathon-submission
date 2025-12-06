@@ -56,7 +56,6 @@ type DbAccount = {
   id: number;
   user_id: string;
   balance: string;
-  currency: string;
   status: "ACTIVE" | "SUSPENDED" | "CLOSED";
   account_number?: string;
   title?: string;
@@ -135,7 +134,7 @@ export async function POST(request: Request) {
       };
 
       const [fromRows] = await connection.query(
-        `SELECT id, user_id, balance, currency, status 
+        `SELECT id, user_id, balance, status 
          FROM bank_accounts 
          WHERE id = ? AND user_id = ? 
          LIMIT 1
@@ -153,7 +152,7 @@ export async function POST(request: Request) {
       }
 
       const [toRows] = await connection.query(
-        `SELECT id, user_id, balance, currency, status, account_number, title 
+        `SELECT id, user_id, balance,  status, account_number, title 
          FROM bank_accounts 
          WHERE UPPER(account_number) = ? 
          LIMIT 1
@@ -172,10 +171,6 @@ export async function POST(request: Request) {
 
       if (toAccount.id === fromAccount.id) {
         return fail("Cannot transfer to the same account");
-      }
-
-      if (toAccount.currency !== fromAccount.currency) {
-        return fail("Both accounts must share the same currency");
       }
 
       const fromBalanceNumber = Number(fromAccount.balance);
@@ -241,20 +236,18 @@ export async function POST(request: Request) {
           from_account_id,
           to_account_id,
           amount,
-          currency,
           type,
           status,
           description,
           created_at,
           completed_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'TRANSFER', 'COMPLETED', ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, 'TRANSFER', 'COMPLETED', ?, ?, ?, ?)`,
         [
           reference,
           fromAccount.id,
           toAccount.id,
           (amountInCents / 100).toFixed(2),
-          fromAccount.currency,
           description,
           now,
           now,

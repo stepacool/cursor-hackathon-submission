@@ -28,17 +28,16 @@ interface TransferAccount {
   title: string;
   accountNumber: string;
   balance: number;
-  currency: string;
   status: BankAccount["status"];
   icon: typeof CreditCard;
 }
 
 const accountIcons = [CreditCard, Building2];
 
-const formatCurrency = (amount: number, showDecimals = true, currency = "USD") => {
-  return new Intl.NumberFormat("en-US", {
+const formatCurrency = (amount: number, showDecimals = true) => {
+  return new Intl.NumberFormat("en-MY", {
     style: "currency",
-    currency,
+    currency: "MYR",
     minimumFractionDigits: showDecimals ? 2 : 0,
     maximumFractionDigits: showDecimals ? 2 : 0,
   }).format(amount);
@@ -47,7 +46,8 @@ const formatCurrency = (amount: number, showDecimals = true, currency = "USD") =
 export default function TransactionPage() {
   const [step, setStep] = useState<Step>("amount");
   const [accounts, setAccounts] = useState<TransferAccount[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<TransferAccount | null>(null);
+  const [selectedAccount, setSelectedAccount] =
+    useState<TransferAccount | null>(null);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [amount, setAmount] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -56,7 +56,9 @@ export default function TransactionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
-  const [transactionReference, setTransactionReference] = useState<string | null>(null);
+  const [transactionReference, setTransactionReference] = useState<
+    string | null
+  >(null);
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -68,22 +70,27 @@ export default function TransactionPage() {
         throw new Error(data.error || "Failed to fetch accounts");
       }
 
-      const accountList = (Array.isArray(data.data) ? data.data : [data.data]) as BankAccount[];
-      const mappedAccounts: TransferAccount[] = accountList.map((account, index) => {
-        const parsedBalance = Number.parseFloat(account.balance ?? "0");
-        const safeBalance = Number.isFinite(parsedBalance) ? parsedBalance : 0;
-        const icon = accountIcons[index % accountIcons.length] ?? CreditCard;
+      const accountList = (
+        Array.isArray(data.data) ? data.data : [data.data]
+      ) as BankAccount[];
+      const mappedAccounts: TransferAccount[] = accountList.map(
+        (account, index) => {
+          const parsedBalance = Number.parseFloat(account.balance ?? "0");
+          const safeBalance = Number.isFinite(parsedBalance)
+            ? parsedBalance
+            : 0;
+          const icon = accountIcons[index % accountIcons.length] ?? CreditCard;
 
-        return {
-          id: account.id,
-          title: account.title,
-          accountNumber: account.account_number,
-          balance: safeBalance,
-          currency: "USD", // Default currency since BankAccount doesn't have currency field
-          status: account.status,
-          icon,
-        };
-      });
+          return {
+            id: account.id,
+            title: account.title,
+            accountNumber: account.account_number,
+            balance: safeBalance,
+            status: account.status,
+            icon,
+          };
+        }
+      );
 
       setAccounts(mappedAccounts);
       setSelectedAccount((previous) => {
@@ -101,7 +108,9 @@ export default function TransactionPage() {
       });
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to fetch accounts");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to fetch accounts"
+      );
       setAccounts([]);
       setSelectedAccount(null);
     } finally {
@@ -120,13 +129,11 @@ export default function TransactionPage() {
   const transferAmount = parseFloat(amount) || 0;
   const fee = transferAmount > 0 ? Math.min(transferAmount * 0.001, 5) : 0;
   const totalAmount = transferAmount + fee;
-  const currency = selectedAccount?.currency ?? "USD";
   const isValidAmount =
     selectedAccount !== null &&
     transferAmount > 0 &&
     totalAmount <= selectedAccount.balance;
   const SelectedAccountIcon = selectedAccount?.icon ?? CreditCard;
-  const currencySymbol = currency === "USD" ? "$" : currency;
 
   const steps: { key: Step; label: string }[] = [
     { key: "amount", label: "Amount" },
@@ -178,28 +185,40 @@ export default function TransactionPage() {
 
         setAccounts((prev) =>
           prev.map((account) =>
-            account.id === accountId ? { ...account, balance: parsedBalance } : account
+            account.id === accountId
+              ? { ...account, balance: parsedBalance }
+              : account
           )
         );
 
         setSelectedAccount((prev) =>
-          prev && prev.id === accountId ? { ...prev, balance: parsedBalance } : prev
+          prev && prev.id === accountId
+            ? { ...prev, balance: parsedBalance }
+            : prev
         );
       };
 
       if (balanceUpdates?.fromAccount) {
-        applyBalanceUpdate(balanceUpdates.fromAccount.id, balanceUpdates.fromAccount.balance);
+        applyBalanceUpdate(
+          balanceUpdates.fromAccount.id,
+          balanceUpdates.fromAccount.balance
+        );
       }
 
       if (balanceUpdates?.toAccount) {
-        applyBalanceUpdate(balanceUpdates.toAccount.id, balanceUpdates.toAccount.balance);
+        applyBalanceUpdate(
+          balanceUpdates.toAccount.id,
+          balanceUpdates.toAccount.balance
+        );
       }
 
       setStep("success");
       toast.success(data.message ?? "Transfer completed successfully");
     } catch (error) {
       console.error("Failed to send transfer:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to send transfer");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send transfer"
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -217,7 +236,9 @@ export default function TransactionPage() {
 
   const canProceedToRecipient = isValidAmount;
   const canProceedToReview =
-    canProceedToRecipient && Boolean(recipientName.trim()) && Boolean(recipientAccount.trim());
+    canProceedToRecipient &&
+    Boolean(recipientName.trim()) &&
+    Boolean(recipientAccount.trim());
 
   if (!mounted) return null;
 
@@ -226,7 +247,9 @@ export default function TransactionPage() {
       <div className="flex min-h-full items-center justify-center bg-linear-to-br from-background via-background to-muted/30">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-2 border-border/40 border-t-foreground" />
-          <p className="text-sm text-muted-foreground">Loading your accounts...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading your accounts...
+          </p>
         </div>
       </div>
     );
@@ -239,10 +262,12 @@ export default function TransactionPage() {
           <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-muted">
             <CreditCard className="h-10 w-10 text-muted-foreground" />
           </div>
-          <h2 className="mb-2 text-2xl font-semibold">No active accounts found</h2>
+          <h2 className="mb-2 text-2xl font-semibold">
+            No active accounts found
+          </h2>
           <p className="mb-8 text-muted-foreground">
-            You need at least one active bank account before you can send a transfer. Create or
-            reactivate an account to continue.
+            You need at least one active bank account before you can send a
+            transfer. Create or reactivate an account to continue.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button asChild className="h-12 rounded-2xl px-6">
@@ -294,7 +319,11 @@ export default function TransactionPage() {
                               : "bg-muted text-muted-foreground"
                         )}
                       >
-                        {isCompleted ? <Check className="h-5 w-5" /> : index + 1}
+                        {isCompleted ? (
+                          <Check className="h-5 w-5" />
+                        ) : (
+                          index + 1
+                        )}
                       </div>
                       <span
                         className={cn(
@@ -342,11 +371,13 @@ export default function TransactionPage() {
                       <SelectedAccountIcon className="h-6 w-6 text-foreground/70" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-muted-foreground">From</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        From
+                      </p>
                       <p className="font-semibold">{selectedAccount.title}</p>
                       <p className="text-sm text-muted-foreground">
                         •••• {selectedAccount.accountNumber.slice(-4)} ·{" "}
-                        {formatCurrency(selectedAccount.balance, true, selectedAccount.currency)}
+                        {formatCurrency(selectedAccount.balance, true)}
                       </p>
                     </div>
                   </div>
@@ -381,7 +412,7 @@ export default function TransactionPage() {
                           <p className="font-medium">{account.title}</p>
                           <p className="text-sm text-muted-foreground">
                             •••• {account.accountNumber.slice(-4)} ·{" "}
-                            {formatCurrency(account.balance, true, account.currency)}
+                            {formatCurrency(account.balance, true)}
                           </p>
                         </div>
                         {selectedAccount.id === account.id && (
@@ -400,7 +431,7 @@ export default function TransactionPage() {
                 </p>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-semibold text-muted-foreground/50 sm:text-5xl">
-                    {currencySymbol}
+                    RM
                   </span>
                   <input
                     type="text"
@@ -417,7 +448,7 @@ export default function TransactionPage() {
                   />
                 </div>
                 <p className="mt-6 text-center text-sm text-muted-foreground">
-                  Available: {formatCurrency(selectedAccount.balance, true, selectedAccount.currency)}
+                  Available: {formatCurrency(selectedAccount.balance, true)}
                 </p>
 
                 {/* Quick Amount Buttons */}
@@ -428,9 +459,7 @@ export default function TransactionPage() {
                       onClick={() => setAmount(quickAmount.toString())}
                       className="rounded-full border border-border/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-foreground/30 hover:bg-muted/50 hover:text-foreground"
                     >
-                      {currencySymbol === "$"
-                        ? `$${quickAmount}`
-                        : `${currencySymbol} ${quickAmount}`}
+                      RM {quickAmount}
                     </button>
                   ))}
                 </div>
@@ -440,25 +469,31 @@ export default function TransactionPage() {
               {transferAmount > 0 && (
                 <div className="space-y-3 rounded-2xl border border-border/50 bg-card/50 p-5">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Transfer amount</span>
+                    <span className="text-muted-foreground">
+                      Transfer amount
+                    </span>
                     <span className="font-medium">
-                      {formatCurrency(transferAmount, true, currency)}
+                      {formatCurrency(transferAmount, true)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">Transfer fee</span>
+                      <span className="text-muted-foreground">
+                        Transfer fee
+                      </span>
                       <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
                         Low fee
                       </span>
                     </div>
-                    <span className="font-medium">{formatCurrency(fee, true, currency)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(fee, true)}
+                    </span>
                   </div>
                   <div className="border-t border-border/50 pt-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">Total</span>
                       <span className="text-lg font-bold">
-                        {formatCurrency(totalAmount, true, currency)}
+                        {formatCurrency(totalAmount, true)}
                       </span>
                     </div>
                   </div>
@@ -503,7 +538,7 @@ export default function TransactionPage() {
                 </div>
                 <div className="flex flex-col items-center">
                   <span className="text-xl font-bold">
-                    {formatCurrency(transferAmount, true, currency)}
+                    {formatCurrency(transferAmount, true)}
                   </span>
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -562,7 +597,9 @@ export default function TransactionPage() {
                   >
                     <Icon className="mb-2 h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">{label}</span>
-                    <span className="text-xs text-muted-foreground">{sublabel}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {sublabel}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -602,9 +639,11 @@ export default function TransactionPage() {
             <div className="space-y-6">
               {/* Amount Hero */}
               <div className="rounded-2xl bg-linear-to-br from-foreground to-foreground/80 p-8 text-center text-background">
-                <p className="mb-2 text-sm font-medium opacity-70">You're sending</p>
+                <p className="mb-2 text-sm font-medium opacity-70">
+                  You're sending
+                </p>
                 <p className="text-5xl font-bold tracking-tight">
-                  {formatCurrency(transferAmount, true, currency)}
+                  {formatCurrency(transferAmount, true)}
                 </p>
                 <p className="mt-2 text-sm opacity-70">to {recipientName}</p>
               </div>
@@ -616,7 +655,8 @@ export default function TransactionPage() {
                   <div className="flex items-center gap-2">
                     <SelectedAccountIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">
-                      {selectedAccount.title} (•••• {selectedAccount.accountNumber.slice(-4)})
+                      {selectedAccount.title} (••••{" "}
+                      {selectedAccount.accountNumber.slice(-4)})
                     </span>
                   </div>
                 </div>
@@ -638,12 +678,14 @@ export default function TransactionPage() {
                 )}
                 <div className="flex items-center justify-between border-b border-border/30 p-4">
                   <span className="text-muted-foreground">Transfer fee</span>
-                  <span className="font-medium">{formatCurrency(fee, true, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(fee, true)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between bg-muted/30 p-4">
                   <span className="font-semibold">Total amount</span>
                   <span className="text-lg font-bold">
-                    {formatCurrency(totalAmount, true, currency)}
+                    {formatCurrency(totalAmount, true)}
                   </span>
                 </div>
               </div>
@@ -718,13 +760,15 @@ export default function TransactionPage() {
               {/* Success Message */}
               <h2 className="mb-2 text-3xl font-bold">Transfer sent!</h2>
               <p className="mb-1 text-lg text-muted-foreground">
-                {formatCurrency(transferAmount, true, currency)} is on its way to
+                {formatCurrency(transferAmount, true)} is on its way to
               </p>
               <p className="mb-8 text-lg font-semibold">{recipientName}</p>
 
               {/* Transaction ID */}
               <div className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full bg-muted/50 px-4 py-2">
-                <span className="text-sm text-muted-foreground">Transaction ID:</span>
+                <span className="text-sm text-muted-foreground">
+                  Transaction ID:
+                </span>
                 <span className="font-mono text-sm font-medium">
                   {transactionReference ?? "Pending"}
                 </span>

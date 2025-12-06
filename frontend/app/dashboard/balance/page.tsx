@@ -37,7 +37,6 @@ interface Account {
   account_number: string;
   title: string;
   balance: number;
-  currency: string;
   status: "ACTIVE" | "SUSPENDED" | "CLOSED";
   created_at: string;
 }
@@ -52,7 +51,6 @@ interface DisplayTransaction {
   type: "credit" | "debit";
   icon: string;
   category: string;
-  currency: string;
 }
 
 const getTransactionLabel = (type: Transaction["type"]) => {
@@ -134,7 +132,6 @@ const mapTransactionToDisplay = (
     type: isCredit ? "credit" : "debit",
     icon: getTransactionIcon(txn.type),
     category: getTransactionLabel(txn.type),
-    currency: txn.currency,
   };
 };
 
@@ -167,7 +164,6 @@ export default function BalancePage() {
             account_number: acc.account_number,
             title: acc.title,
             balance: parseFloat(acc.balance),
-            currency: "USD", // Default currency since BankAccount doesn't have currency field
             status: acc.status,
             created_at: acc.created_at,
           })
@@ -219,10 +215,10 @@ export default function BalancePage() {
     return `•••• ${number.slice(-4)}`;
   };
 
-  const formatCurrency = (amount: number, currency: string = "USD") => {
-    return new Intl.NumberFormat("en-US", {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-MY", {
       style: "currency",
-      currency,
+      currency: "MYR",
     }).format(amount);
   };
 
@@ -236,11 +232,12 @@ export default function BalancePage() {
 
   // Get active accounts only
   const activeAccounts = allAccounts.filter((a) => a.status === "ACTIVE");
-  
+
   // Get selected account
   const selectedAccount =
-    allAccounts.find((a) => a.id.toString() === selectedAccountId) || allAccounts[0];
-  
+    allAccounts.find((a) => a.id.toString() === selectedAccountId) ||
+    allAccounts[0];
+
   const checkingBalance = selectedAccount?.balance || 0;
 
   const accountTransactions: DisplayTransaction[] = selectedAccount
@@ -250,7 +247,9 @@ export default function BalancePage() {
             txn.from_account_id === selectedAccount.id ||
             txn.to_account_id === selectedAccount.id
         )
-        .map((txn) => mapTransactionToDisplay(txn, selectedAccount.id, formatDate))
+        .map((txn) =>
+          mapTransactionToDisplay(txn, selectedAccount.id, formatDate)
+        )
     : [];
 
   const recentTransactions = accountTransactions.slice(0, 5);
@@ -332,7 +331,10 @@ export default function BalancePage() {
               {/* Account Selector in Card */}
               <div className="mb-6 flex items-center justify-between rounded-xl bg-white/10 p-4 backdrop-blur-sm">
                 <div className="flex items-center gap-3 flex-1">
-                  <Select value={selectedAccountId} onValueChange={handleAccountChange}>
+                  <Select
+                    value={selectedAccountId}
+                    onValueChange={handleAccountChange}
+                  >
                     <SelectTrigger className="h-auto w-full border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
                       <SelectValue>
                         <div className="flex items-center gap-3">
@@ -344,7 +346,10 @@ export default function BalancePage() {
                               {selectedAccount.title}
                             </p>
                             <p className="flex items-center gap-2 text-xs text-white/60">
-                              {selectedAccount.currency} • {maskAccountNumber(selectedAccount.account_number)}
+                              RM •{" "}
+                              {maskAccountNumber(
+                                selectedAccount.account_number
+                              )}
                             </p>
                           </div>
                         </div>
@@ -363,10 +368,13 @@ export default function BalancePage() {
                                 <Wallet className="size-5" />
                               </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{account.title}</p>
+                                <p className="font-semibold text-sm">
+                                  {account.title}
+                                </p>
                                 <p className="text-xs text-white/60">
-                                  {account.currency} • {maskAccountNumber(account.account_number)} •{" "}
-                                  {formatCurrency(account.balance, account.currency)}
+                                  RM •{" "}
+                                  {maskAccountNumber(account.account_number)} •{" "}
+                                  {formatCurrency(account.balance)}
                                 </p>
                               </div>
                             </div>
@@ -391,7 +399,7 @@ export default function BalancePage() {
 
               <div className="mb-8">
                 <p className="text-5xl font-bold tracking-tight">
-                  {showBalance ? formatCurrency(checkingBalance, selectedAccount.currency) : "••••••"}
+                  {showBalance ? formatCurrency(checkingBalance) : "••••••"}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">
@@ -410,9 +418,7 @@ export default function BalancePage() {
                     <span className="text-sm text-white/60">Income</span>
                   </div>
                   <p className="text-xl font-semibold text-emerald-400">
-                    {showBalance
-                      ? formatCurrency(monthlyIncome, selectedAccount.currency)
-                      : "••••"}
+                    {showBalance ? formatCurrency(monthlyIncome) : "••••"}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/5 p-4 backdrop-blur-sm">
@@ -421,9 +427,7 @@ export default function BalancePage() {
                     <span className="text-sm text-white/60">Spending</span>
                   </div>
                   <p className="text-xl font-semibold text-rose-400">
-                    {showBalance
-                      ? formatCurrency(monthlySpending, selectedAccount.currency)
-                      : "••••"}
+                    {showBalance ? formatCurrency(monthlySpending) : "••••"}
                   </p>
                 </div>
               </div>
@@ -461,7 +465,8 @@ export default function BalancePage() {
                 key={transaction.id}
                 className={cn(
                   "flex items-center justify-between p-4 transition-colors hover:bg-accent/50",
-                  index !== recentTransactions.length - 1 && "border-b border-border/30"
+                  index !== recentTransactions.length - 1 &&
+                    "border-b border-border/30"
                 )}
               >
                 <div className="flex items-center gap-4">
@@ -497,10 +502,7 @@ export default function BalancePage() {
                     )}
                   >
                     {transaction.type === "credit" ? "+" : ""}
-                    {formatCurrency(
-                      transaction.amount,
-                      transaction.currency || selectedAccount.currency
-                    )}
+                    {formatCurrency(transaction.amount)}
                   </span>
                 </div>
               </div>
@@ -517,10 +519,11 @@ export default function BalancePage() {
               All Transactions
             </DialogTitle>
             <DialogDescription>
-              Complete transaction history for {selectedAccount.title} ({maskAccountNumber(selectedAccount.account_number)})
+              Complete transaction history for {selectedAccount.title} (
+              {maskAccountNumber(selectedAccount.account_number)})
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="overflow-y-auto px-6 pb-6 max-h-[calc(85vh-120px)]">
             <div className="space-y-1">
               {isLoadingTransactions ? (
@@ -536,7 +539,7 @@ export default function BalancePage() {
                   <div
                     key={transaction.id}
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-accent/50",
+                      "flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-accent/50"
                     )}
                   >
                     <div className="flex items-center gap-4">
@@ -578,10 +581,7 @@ export default function BalancePage() {
                         )}
                       >
                         {transaction.type === "credit" ? "+" : ""}
-                        {formatCurrency(
-                          transaction.amount,
-                          transaction.currency || selectedAccount.currency
-                        )}
+                        {formatCurrency(transaction.amount)}
                       </span>
                     </div>
                   </div>
