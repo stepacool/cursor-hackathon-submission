@@ -1,0 +1,360 @@
+from typing import Optional, List
+from datetime import datetime
+from decimal import Decimal
+from sqlalchemy import select, and_, or_, desc
+from sqlalchemy.orm import selectinload
+
+from infrastructure.db import session_maker
+from .models import (
+    BankAccount, Call, CallTranscription, Transaction,
+    ToolInvocation, AccountStatus, CallStatus, TransactionStatus
+)
+
+
+# Call Repository Functions
+
+async def get_call_by_id(call_id: int) -> Optional[Call]:
+    """Get a call by ID with all relationships loaded."""
+    async with session_maker() as session:
+        stmt = (
+            select(Call)
+            .where(Call.id == call_id)
+            .options(
+                selectinload(Call.transcriptions),
+                selectinload(Call.tool_invocations),
+                selectinload(Call.transactions)
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_calls_by_user(
+        user_id: str,
+        status: Optional[CallStatus] = None,
+        limit: int = 50
+) -> List[Call]:
+    """Get calls for a user, optionally filtered by status."""
+    async with session_maker() as session:
+        stmt = select(Call).where(Call.user_id == user_id)
+
+        if status:
+            stmt = stmt.where(Call.status == status)
+
+        stmt = stmt.order_by(desc(Call.scheduled_at)).limit(limit)
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def create_call(
+        user_id: str,
+        phone_number: str,
+        scheduled_at: datetime,
+        language: str,
+        customer_name: str
+) -> Call:
+    """Create a new call."""
+    async with session_maker() as session:
+        call = Call(
+            user_id=user_id,
+            phone_number=phone_number,
+            scheduled_at=scheduled_at,
+            language=language,
+            customer_name=customer_name,
+            status=CallStatus.SCHEDULED
+        )
+        session.add(call)
+        await session.commit()
+        await session.refresh(call)
+        return call
+
+
+async def update_call_status(
+        call_id: int,
+        status: CallStatus,
+        call_sid: Optional[str] = None,
+        started_at: Optional[datetime] = None,
+        ended_at: Optional[datetime] = None,
+        duration_seconds: Optional[int] = None
+) -> Optional[Call]:
+    """Update call status and related fields."""
+    async with session_maker() as session:
+        call = await session.get(Call, call_id)
+        if not call:
+            return None
+
+        call.status = status
+        if call_sid:
+            call.call_sid = call_sid
+        if started_at:
+            call.started_at = started_at
+        if ended_at:
+            call.ended_at = ended_at
+        if duration_seconds is not None:
+            call.duration_seconds = duration_seconds
+
+        await session.commit()
+        await session.refresh(call)
+        return call
+
+
+# Bank Account Repository Functions
+
+async def get_account_by_id(account_id: int) -> Optional[BankAccount]:
+    """Get a bank account by ID."""
+    async with session_maker() as session:
+        return await session.get(BankAccount, account_id)
+
+
+async def get_account_by_number(account_number: str) -> Optional[BankAccount]:
+    """Get a bank account by account number."""
+    async with session_maker() as session:
+        stmt = select(BankAccount).where(BankAccount.account_number == account_number)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_accounts_by_user(
+        user_id: str,
+        status: Optional[AccountStatus] = None
+) -> List[BankAccount]:
+    """Get all accounts for a user, optionally filtered by status."""
+    async with session_maker() as session:
+        stmt = select(BankAccount).where(BankAccount.user_id == user_id)
+
+        if status:
+            stmt = stmt.where(BankAccount.status == status)
+
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def create_account(
+        account_number: str,
+        user_id: str,
+        initial_balance: Decimal = Decimal("0.00"),
+        currency: str = "USD"
+) -> BankAccount:
+    """Create a new bank account."""
+    async with session_maker() as session:
+        account = BankAccount(
+            account_number=account_number,
+            user_id=user_id,
+            balance=initial_balance,
+            currency=currency,
+            status=AccountStatus.ACTIVE
+        )
+        session.add(account)
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
+async def update_account_balance(
+        account_id: int,
+        new_balance: Decimal
+) -> Optional[BankAccount]:
+    """Update account balance."""
+    async with session_maker() as session:
+        account = await session.get(BankAccount, account_id)
+        if not account:
+            return None
+
+        account.balance = new_balance
+        account.updated_at = datetime.utcnow()
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
+# Transaction Repository Functions
+
+async def get_transaction_by_id(transaction_id: int) -> Optional[Transaction]:
+    """Get a transaction by ID with relationships."""
+    async with session_maker() as session:
+        stmt = (
+            select(Transaction)
+            .where(Transaction.id == transaction_id)
+            .options(
+                selectinload(Transaction.from_account),
+                selectinload(Transaction.to_account)
+            )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_transaction_by_reference(reference: str) -> Optional[Transaction]:
+    """Get a transaction by reference number."""
+    async with session_maker() as session:
+        stmt = select(Transaction).where(Transaction.reference == reference)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_account_transactions(
+        account_id: int,
+        limit: int = 100,
+        status: Optional[TransactionStatus] = None
+) -> List[Transaction]:
+    """Get transactions for an account (both incoming and outgoing)."""
+    async with session_maker() as session:
+        stmt = select(Transaction).where(
+            or_(
+                Transaction.from_account_id == account_id,
+                Transaction.to_account_id == account_id
+            )
+        )
+
+        if status:
+            stmt = stmt.where(Transaction.status == status)
+
+        stmt = stmt.order_by(desc(Transaction.created_at)).limit(limit)
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def create_transaction(
+        reference: str,
+        amount: Decimal,
+        transaction_type: str,
+        from_account_id: Optional[int] = None,
+        to_account_id: Optional[int] = None,
+        currency: str = "USD",
+        description: Optional[str] = None,
+        call_id: Optional[int] = None,
+        tool_invocation_id: Optional[int] = None
+) -> Transaction:
+    """Create a new transaction."""
+    async with session_maker() as session:
+        transaction = Transaction(
+            reference=reference,
+            from_account_id=from_account_id,
+            to_account_id=to_account_id,
+            amount=amount,
+            currency=currency,
+            type=transaction_type,
+            description=description,
+            call_id=call_id,
+            tool_invocation_id=tool_invocation_id,
+            status=TransactionStatus.PENDING
+        )
+        session.add(transaction)
+        await session.commit()
+        await session.refresh(transaction)
+        return transaction
+
+
+async def update_transaction_status(
+        transaction_id: int,
+        status: TransactionStatus,
+        completed_at: Optional[datetime] = None
+) -> Optional[Transaction]:
+    """Update transaction status."""
+    async with session_maker() as session:
+        transaction = await session.get(Transaction, transaction_id)
+        if not transaction:
+            return None
+
+        transaction.status = status
+        if completed_at:
+            transaction.completed_at = completed_at
+        elif status == TransactionStatus.COMPLETED:
+            transaction.completed_at = datetime.utcnow()
+
+        await session.commit()
+        await session.refresh(transaction)
+        return transaction
+
+
+# Tool Invocation Repository Functions
+
+async def create_tool_invocation(
+        call_id: int,
+        tool_type: str,
+        parameters: Optional[str] = None
+) -> ToolInvocation:
+    """Create a new tool invocation record."""
+    async with session_maker() as session:
+        invocation = ToolInvocation(
+            call_id=call_id,
+            tool_type=tool_type,
+            parameters=parameters,
+            success=False
+        )
+        session.add(invocation)
+        await session.commit()
+        await session.refresh(invocation)
+        return invocation
+
+
+async def complete_tool_invocation(
+        invocation_id: int,
+        success: bool,
+        response: Optional[str] = None,
+        error_message: Optional[str] = None
+) -> Optional[ToolInvocation]:
+    """Mark a tool invocation as completed."""
+    async with session_maker() as session:
+        invocation = await session.get(ToolInvocation, invocation_id)
+        if not invocation:
+            return None
+
+        invocation.success = success
+        invocation.response = response
+        invocation.error_message = error_message
+        invocation.completed_at = datetime.utcnow()
+
+        await session.commit()
+        await session.refresh(invocation)
+        return invocation
+
+
+async def get_call_tool_invocations(call_id: int) -> List[ToolInvocation]:
+    """Get all tool invocations for a call."""
+    async with session_maker() as session:
+        stmt = (
+            select(ToolInvocation)
+            .where(ToolInvocation.call_id == call_id)
+            .order_by(ToolInvocation.invoked_at)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+# Call Transcription Repository Functions
+
+async def add_transcription(
+        call_id: int,
+        sequence: int,
+        text: str,
+        speaker: Optional[str] = None,
+        confidence: Optional[Decimal] = None,
+        offset_ms: Optional[int] = None
+) -> CallTranscription:
+    """Add a transcription segment to a call."""
+    async with session_maker() as session:
+        transcription = CallTranscription(
+            call_id=call_id,
+            sequence=sequence,
+            text=text,
+            speaker=speaker,
+            confidence=confidence,
+            offset_ms=offset_ms
+        )
+        session.add(transcription)
+        await session.commit()
+        await session.refresh(transcription)
+        return transcription
+
+
+async def get_call_transcriptions(call_id: int) -> List[CallTranscription]:
+    """Get all transcription segments for a call, ordered by sequence."""
+    async with session_maker() as session:
+        stmt = (
+            select(CallTranscription)
+            .where(CallTranscription.call_id == call_id)
+            .order_by(CallTranscription.sequence)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())

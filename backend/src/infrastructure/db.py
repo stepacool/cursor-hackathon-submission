@@ -1,3 +1,4 @@
+import ssl
 from asyncio import current_task
 
 from sqlalchemy import DateTime, func, Column
@@ -20,8 +21,13 @@ class CustomBase(AsyncAttrs, DeclarativeBase):
 
 Base = declarative_base(cls=CustomBase)
 
+ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+ctx.check_hostname = False
 engine = create_async_engine(
     url=settings.ASYNC_DB_DSN,
+    connect_args={
+        "ssl": ctx,
+    }
 )
 
 session_maker = async_scoped_session(

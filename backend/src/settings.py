@@ -59,6 +59,11 @@ class CoreSettings(BaseSettings):
     DEBUG: bool = True
 
 
+class GROQSettings(BaseSettings):
+    GROQ_PRIVATE_API_KEY: str = ""
+    GROQ_PHONE_NUMBER_ID: str = ""
+
+
 class StorageSettings(BaseSettings):
     """Add your storage settings here"""
     pass
@@ -68,6 +73,7 @@ class Settings(
     CoreSettings,
     MySQLSettings,
     StorageSettings,
+    GROQSettings,
     BaseSettings,
 ):
     model_config = SettingsConfigDict(
