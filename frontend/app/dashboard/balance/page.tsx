@@ -321,58 +321,62 @@ export default function BalancePage() {
             <div className="relative z-10">
               {/* Account Selector in Card */}
               <div className="mb-6 flex items-center justify-between rounded-xl bg-white/10 p-4 backdrop-blur-sm">
-                <Select value={selectedAccountId} onValueChange={handleAccountChange}>
-                  <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-12 items-center justify-center rounded-xl bg-white/10">
-                        {(() => {
-                          const Icon = accountTypeConfig[selectedAccount.type].icon;
-                          return <Icon className="size-6" />;
-                        })()}
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm text-white/60">
-                          {selectedAccount.name}
-                        </p>
-                        <p className="flex items-center gap-2 text-sm text-white/80">
-                          <CreditCard className="size-3" />
-                          {accountTypeConfig[selectedAccount.type].label} •{" "}
-                          {maskAccountNumber(selectedAccount.number)}
-                        </p>
-                      </div>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl bg-slate-900 border-slate-700">
-                    {activeAccounts.map((account) => {
-                      const config = accountTypeConfig[account.type];
-                      const Icon = config.icon;
-                      return (
-                        <SelectItem
-                          key={account.id}
-                          value={account.id}
-                          className="rounded-lg text-white focus:bg-white/10 focus:text-white"
-                        >
-                          <div className="flex items-center gap-3 py-2">
-                            <div className="flex size-10 items-center justify-center rounded-lg bg-white/10">
-                              <Icon className="size-5" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm">{account.name}</p>
-                              <p className="text-xs text-white/60">
-                                {maskAccountNumber(account.number)} •{" "}
-                                {formatCurrency(account.balance)}
-                              </p>
-                            </div>
+                <div className="flex items-center gap-3 flex-1">
+                  <Select value={selectedAccountId} onValueChange={handleAccountChange}>
+                    <SelectTrigger className="h-auto w-full border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
+                      <SelectValue>
+                        <div className="flex items-center gap-3">
+                          <div className="flex size-12 items-center justify-center rounded-xl bg-white/10">
+                            {(() => {
+                              const Icon = accountTypeConfig[selectedAccount.type].icon;
+                              return <Icon className="size-6" />;
+                            })()}
                           </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                          <div className="text-left">
+                            <p className="text-sm text-white/60">
+                              {selectedAccount.name}
+                            </p>
+                            <p className="flex items-center gap-2 text-sm text-white/80">
+                              <CreditCard className="size-3" />
+                              {accountTypeConfig[selectedAccount.type].label} •{" "}
+                              {maskAccountNumber(selectedAccount.number)}
+                            </p>
+                          </div>
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl bg-slate-900 border-slate-700">
+                      {activeAccounts.map((account) => {
+                        const config = accountTypeConfig[account.type];
+                        const Icon = config.icon;
+                        return (
+                          <SelectItem
+                            key={account.id}
+                            value={account.id}
+                            className="rounded-lg text-white focus:bg-white/10 focus:text-white"
+                          >
+                            <div className="flex items-center gap-3 py-2">
+                              <div className="flex size-10 items-center justify-center rounded-lg bg-white/10">
+                                <Icon className="size-5" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm">{account.name}</p>
+                                <p className="text-xs text-white/60">
+                                  {maskAccountNumber(account.number)} •{" "}
+                                  {formatCurrency(account.balance)}
+                                </p>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowBalance(!showBalance)}
-                  className="rounded-xl bg-white/10 p-2.5 backdrop-blur-sm transition-colors hover:bg-white/20"
+                  className="ml-3 rounded-xl bg-white/10 p-2.5 backdrop-blur-sm transition-colors hover:bg-white/20 shrink-0"
                 >
                   {showBalance ? (
                     <EyeOff className="size-5" />

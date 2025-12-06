@@ -112,6 +112,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState(1456);
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+  const [openAccountDialog, setOpenAccountDialog] = useState(false);
 
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
@@ -126,7 +127,7 @@ export default function Dashboard() {
         const response = await fetch('/api/transactions');
         const data: TransactionsResponse = await response.json();
 
-        if (data.success && data.data) {
+        if (data.success && data.data && userId) {
           const displayTransactions = data.data.map(txn =>
             convertToDisplayTransaction(txn, userId)
           );
