@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CreditCard } from "lucide-react";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { Hero } from "@/components/hero";
+import { MinimalFooter } from "@/components/ui/minimal-footer";
 
 export default function Home() {
   return (
@@ -33,6 +34,7 @@ export default function Home() {
       </header>
 
       <Hero />
+      <MinimalFooter />
     </main>
   );
 }

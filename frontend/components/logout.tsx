@@ -14,8 +14,14 @@ export function Logout() {
   };
 
   return (
-    <Button onClick={handleLogout} variant="outline">
-      Logout <LogOut className="size-4" />
+    <Button
+      onClick={handleLogout}
+      variant="ghost"
+      size="sm"
+      className="h-9 gap-2 rounded-xl text-muted-foreground hover:text-foreground"
+    >
+      <LogOut className="size-4" />
+      <span className="hidden sm:inline">Logout</span>
     </Button>
   );
 }

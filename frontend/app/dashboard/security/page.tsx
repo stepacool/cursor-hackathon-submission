@@ -1,17 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Shield, User, Mail, Phone, MapPin, Mic, Square, Play, Trash2 } from "lucide-react";
+import {
+  Shield,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Mic,
+  Square,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Lock,
+  Fingerprint,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import {
   readNamespacedItem,
   STORAGE_KEYS,
   writeNamespacedItem,
 } from "@/lib/local-storage";
+import { cn } from "@/lib/utils";
 
 export default function SecurityPage() {
   const [isRecording, setIsRecording] = useState(false);
@@ -121,32 +134,52 @@ export default function SecurityPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const securityFeatures = [
+    { label: "Email Verified", status: true, icon: Mail },
+    { label: "Phone Verified", status: true, icon: Phone },
+    { label: "Voice Auth", status: !!audioURL, icon: Mic },
+    { label: "2FA Enabled", status: false, icon: Lock },
+  ];
+
   return (
-    <div className="flex h-full flex-col">
-      {/* Content */}
-      <div className="border-t border-border bg-card/50 px-6 py-8">
-        <div className="mx-auto max-w-2xl space-y-8">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="size-5" />
-                Personal Information
-              </CardTitle>
-              <CardDescription>Your basic account information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+    <div className="flex h-full flex-col p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="font-semibold text-2xl tracking-tight">Security Center</h1>
+        <p className="text-muted-foreground text-sm">Manage your profile and security settings</p>
+      </div>
+
+      <div className="mx-auto w-full max-w-4xl px-4">
+        <div className="space-y-6">
+          {/* Personal Information Card */}
+          <div className="rounded-2xl border border-border/50 bg-card p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-violet-600">
+                <User className="size-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Personal Information</h2>
+                <p className="text-sm text-muted-foreground">Your basic account details</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Your name" value={userName} readOnly />
+                  <Label htmlFor="name" className="text-muted-foreground text-xs font-medium">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Your name"
+                    value={userName}
+                    readOnly
+                    className="h-11 rounded-xl border-border/50 bg-muted/30"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">
-                    <span className="flex items-center gap-2">
-                      <Mail className="size-4" />
-                      Email Address
-                    </span>
+                  <Label htmlFor="email" className="text-muted-foreground text-xs font-medium">
+                    Email Address
                   </Label>
                   <Input
                     id="email"
@@ -154,132 +187,174 @@ export default function SecurityPage() {
                     placeholder="you@example.com"
                     value={userEmail}
                     readOnly
+                    className="h-11 rounded-xl border-border/50 bg-muted/30"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">
-                  <span className="flex items-center gap-2">
-                    <Phone className="size-4" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-muted-foreground text-xs font-medium">
                     Phone Number
-                  </span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+60 123 456 789"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  onBlur={() => {
-                    persistPhone(phoneNumber.trim());
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">
-                  <span className="flex items-center gap-2">
-                    <MapPin className="size-4" />
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+60 123 456 789"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onBlur={() => persistPhone(phoneNumber.trim())}
+                    className="h-11 rounded-xl border-border/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-muted-foreground text-xs font-medium">
                     Address
-                  </span>
-                </Label>
-                <Input id="address" placeholder="123 Main St, City, Country" defaultValue="123 Main St, San Francisco, CA" />
+                  </Label>
+                  <Input
+                    id="address"
+                    placeholder="123 Main St, City"
+                    defaultValue="123 Main St, San Francisco"
+                    className="h-11 rounded-xl border-border/50"
+                  />
+                </div>
               </div>
               <Button
-                className="mt-4"
-                onClick={() => {
-                  persistPhone(phoneNumber.trim());
-                }}
+                className="mt-2 rounded-xl"
+                onClick={() => persistPhone(phoneNumber.trim())}
               >
                 Save Changes
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Voice Authentication */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="size-5" />
-                Voice Authentication
-              </CardTitle>
-              <CardDescription>
-                Record your voice to enable secure voice-based authentication for transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center space-y-6">
-                {/* Recording Indicator */}
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`mb-4 flex size-24 items-center justify-center rounded-full border-4 transition-all ${
-                      isRecording
-                        ? "border-red-500 bg-red-500/10 animate-pulse"
-                        : audioURL
-                          ? "border-emerald-500 bg-emerald-500/10"
-                          : "border-border bg-card"
-                    }`}
-                  >
-                    <Mic className={`size-10 ${isRecording ? "text-red-500" : audioURL ? "text-emerald-500" : "text-muted-foreground"}`} />
-                  </div>
-                  <p className="font-mono text-2xl font-medium">
-                    {formatTime(recordingTime)}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {isRecording
-                      ? "Recording in progress..."
-                      : audioURL
-                        ? "Voice sample recorded"
-                        : "Ready to record"}
-                  </p>
+          {/* Voice Authentication Card */}
+          <div className="rounded-2xl border border-border/50 bg-card p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-teal-500 to-teal-600">
+                  <Fingerprint className="size-5 text-white" />
                 </div>
-
-                {/* Recording Controls */}
-                <div className="flex items-center gap-3">
-                  {!isRecording && !audioURL && (
-                    <Button onClick={startRecording} size="lg" className="gap-2">
-                      <Mic className="size-4" />
-                      Start Recording
-                    </Button>
-                  )}
-                  {isRecording && (
-                    <Button onClick={stopRecording} variant="destructive" size="lg" className="gap-2">
-                      <Square className="size-4" />
-                      Stop Recording
-                    </Button>
-                  )}
-                  {audioURL && !isRecording && (
-                    <>
-                      <Button onClick={startRecording} variant="outline" size="lg" className="gap-2">
-                        <Mic className="size-4" />
-                        Re-record
-                      </Button>
-                      <Button onClick={deleteRecording} variant="destructive" size="lg" className="gap-2">
-                        <Trash2 className="size-4" />
-                        Delete
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                {/* Audio Playback */}
-                {audioURL && (
-                  <div className="w-full max-w-md">
-                    <Label className="mb-2 block text-center">Preview your recording:</Label>
-                    <audio controls src={audioURL} className="w-full" />
-                  </div>
-                )}
-
-                {/* Instructions */}
-                <div className="max-w-md rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">Recording Tips:</p>
-                  <p className="mt-1">
-                    Speak clearly and naturally. Say: "My voice is my password for secure banking."
-                    This recording will be used to verify your identity during transactions.
-                  </p>
+                <div>
+                  <h2 className="font-semibold">Voice Authentication</h2>
+                  <p className="text-sm text-muted-foreground">Secure your transactions with voice ID</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              {audioURL && (
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-500">
+                  <CheckCircle2 className="size-3" />
+                  Enrolled
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col items-center space-y-6 py-4">
+              {/* Recording Indicator */}
+              <div className="relative">
+                <div
+                  className={cn(
+                    "flex size-28 items-center justify-center rounded-full border-4 transition-all duration-300",
+                    isRecording
+                      ? "border-rose-500 bg-rose-500/10"
+                      : audioURL
+                        ? "border-emerald-500 bg-emerald-500/10"
+                        : "border-border/50 bg-muted/30"
+                  )}
+                >
+                  {isRecording && (
+                    <div className="absolute inset-0 rounded-full animate-ping bg-rose-500/20" />
+                  )}
+                  <Mic
+                    className={cn(
+                      "size-12 transition-colors",
+                      isRecording
+                        ? "text-rose-500"
+                        : audioURL
+                          ? "text-emerald-500"
+                          : "text-muted-foreground"
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center">
+                <p className="font-mono text-3xl font-semibold tabular-nums">
+                  {formatTime(recordingTime)}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {isRecording
+                    ? "Recording your voice..."
+                    : audioURL
+                      ? "Voice sample saved"
+                      : "Ready to record"}
+                </p>
+              </div>
+
+              {/* Recording Controls */}
+              <div className="flex items-center gap-3">
+                {!isRecording && !audioURL && (
+                  <Button
+                    onClick={startRecording}
+                    size="lg"
+                    className="h-12 gap-2 rounded-xl bg-linear-to-br from-teal-500 to-teal-600 px-6 hover:from-teal-400 hover:to-teal-500"
+                  >
+                    <Mic className="size-4" />
+                    Start Recording
+                  </Button>
+                )}
+                {isRecording && (
+                  <Button
+                    onClick={stopRecording}
+                    size="lg"
+                    className="h-12 gap-2 rounded-xl bg-rose-500 px-6 hover:bg-rose-600"
+                  >
+                    <Square className="size-4" />
+                    Stop Recording
+                  </Button>
+                )}
+                {audioURL && !isRecording && (
+                  <>
+                    <Button
+                      onClick={startRecording}
+                      variant="outline"
+                      size="lg"
+                      className="h-12 gap-2 rounded-xl px-6"
+                    >
+                      <Mic className="size-4" />
+                      Re-record
+                    </Button>
+                    <Button
+                      onClick={deleteRecording}
+                      variant="outline"
+                      size="lg"
+                      className="h-12 gap-2 rounded-xl px-6 border-rose-500/30 text-rose-500 hover:bg-rose-500/10"
+                    >
+                      <Trash2 className="size-4" />
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Audio Playback */}
+              {audioURL && (
+                <div className="w-full max-w-md rounded-xl border border-border/50 bg-muted/30 p-4">
+                  <p className="mb-2 text-center text-sm font-medium text-muted-foreground">
+                    Preview Recording
+                  </p>
+                  <audio controls src={audioURL} className="w-full" />
+                </div>
+              )}
+
+              {/* Instructions */}
+              <div className="max-w-md rounded-xl bg-muted/30 p-4 text-center">
+                <p className="text-sm font-medium">Recording Tips</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Speak clearly: "My voice is my password for secure banking."
+                  This will verify your identity during transactions.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

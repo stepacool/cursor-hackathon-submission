@@ -106,7 +106,7 @@ export default function TransactionPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-background via-background to-muted/30">
+    <div className="min-h-full bg-linear-to-br from-background via-background to-muted/30">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Step Indicator */}
         {step !== "success" && (
@@ -174,7 +174,7 @@ export default function TransactionPage() {
                   className="group flex w-full items-center justify-between rounded-2xl border border-border/50 bg-card p-5 transition-all hover:border-foreground/20 hover:shadow-lg"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-foreground/5 to-foreground/10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-foreground/5 to-foreground/10">
                       <selectedAccount.icon className="h-6 w-6 text-foreground/70" />
                     </div>
                     <div className="text-left">
@@ -208,7 +208,7 @@ export default function TransactionPage() {
                           selectedAccount.id === account.id && "bg-muted/50"
                         )}
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-foreground/5 to-foreground/10">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-foreground/5 to-foreground/10">
                           <account.icon className="h-5 w-5 text-foreground/70" />
                         </div>
                         <div className="flex-1 text-left">
@@ -324,7 +324,7 @@ export default function TransactionPage() {
           {step === "recipient" && (
             <div className="space-y-6">
               {/* Transfer Preview */}
-              <div className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-transparent to-emerald-500/10 p-4">
+              <div className="flex items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-emerald-500/10 via-transparent to-emerald-500/10 p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/5">
                   <selectedAccount.icon className="h-5 w-5 text-foreground/70" />
                 </div>
@@ -426,7 +426,7 @@ export default function TransactionPage() {
           {step === "review" && (
             <div className="space-y-6">
               {/* Amount Hero */}
-              <div className="rounded-2xl bg-gradient-to-br from-foreground to-foreground/80 p-8 text-center text-background">
+              <div className="rounded-2xl bg-linear-to-br from-foreground to-foreground/80 p-8 text-center text-background">
                 <p className="mb-2 text-sm font-medium opacity-70">You're sending</p>
                 <p className="text-5xl font-bold tracking-tight">
                   {formatCurrency(transferAmount)}
@@ -532,7 +532,7 @@ export default function TransactionPage() {
                 <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
                 <div className="absolute inset-2 animate-pulse rounded-full bg-emerald-500/30" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-2xl shadow-emerald-500/30">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 shadow-2xl shadow-emerald-500/30">
                     <Check className="h-12 w-12 text-white" strokeWidth={3} />
                   </div>
                 </div>
