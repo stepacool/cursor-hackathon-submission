@@ -41,9 +41,11 @@ async def get_call_by_id(call_id: int) -> Optional[Call]:
 async def get_call_by_phone_number(phone_number: str) -> Optional[Call]:
     """Get a call by phone number."""
     async with session_maker() as session:
-        stmt = select(Call).where(Call.phone_number == phone_number)
+        stmt = select(Call).where(
+            Call.phone_number == phone_number,
+        ).order_by(Call.created_at.desc())
         result = await session.execute(stmt)
-        return result.scalar_one_or_none()
+        return result.first()
 
 
 async def get_scheduled_calls() -> list[Call]:

@@ -18,7 +18,6 @@ class MySQLSettings(BaseSettings):
     MYSQL_DB: str = "test"
     MYSQL_SSL: bool = True  # TiDB Cloud requires SSL
 
-
     ASYNC_DB_DSN: AnyUrl | str | None = None
     SYNC_DB_DSN: AnyUrl | str | None = None
 
