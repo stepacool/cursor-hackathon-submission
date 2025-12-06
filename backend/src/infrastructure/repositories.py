@@ -11,7 +11,6 @@ from .models import (
     Call,
     CallTranscription,
     Transaction,
-    ToolInvocation,
     AccountStatus,
     BillStatus,
     BillType,
@@ -32,7 +31,6 @@ async def get_call_by_id(call_id: int) -> Optional[Call]:
             .where(Call.id == call_id)
             .options(
                 selectinload(Call.transcriptions),
-                selectinload(Call.tool_invocations),
                 selectinload(Call.transactions),
             )
         )
@@ -196,7 +194,6 @@ async def transfer_money_between_accounts(
     to_account_id: int,
     amount: Decimal,
     call_id: Optional[int] = None,
-    tool_invocation_id: Optional[int] = None,
 ) -> Optional[Transaction]:
     """Transfer money between accounts."""
     async with session_maker() as session:
@@ -218,7 +215,6 @@ async def transfer_money_between_accounts(
             to_account_id=to_account_id,
             description=f"Transfer from {from_account.account_number} to {to_account.account_number}",
             call_id=call_id,
-            tool_invocation_id=tool_invocation_id,
         )
 
 
@@ -276,7 +272,6 @@ async def create_transaction(
     to_account_id: Optional[int] = None,
     description: Optional[str] = None,
     call_id: Optional[int] = None,
-    tool_invocation_id: Optional[int] = None,
 ) -> Transaction:
     """Create a new transaction."""
     async with session_maker() as session:
@@ -288,7 +283,6 @@ async def create_transaction(
             type=transaction_type,
             description=description,
             call_id=call_id,
-            tool_invocation_id=tool_invocation_id,
             status=TransactionStatus.PENDING,
         )
         session.add(transaction)
@@ -317,57 +311,6 @@ async def update_transaction_status(
         await session.commit()
         await session.refresh(transaction)
         return transaction
-
-
-# Tool Invocation Repository Functions
-
-
-async def create_tool_invocation(
-    call_id: int, tool_type: str, parameters: Optional[str] = None
-) -> ToolInvocation:
-    """Create a new tool invocation record."""
-    async with session_maker() as session:
-        invocation = ToolInvocation(
-            call_id=call_id, tool_type=tool_type, parameters=parameters, success=False
-        )
-        session.add(invocation)
-        await session.commit()
-        await session.refresh(invocation)
-        return invocation
-
-
-async def complete_tool_invocation(
-    invocation_id: int,
-    success: bool,
-    response: Optional[str] = None,
-    error_message: Optional[str] = None,
-) -> Optional[ToolInvocation]:
-    """Mark a tool invocation as completed."""
-    async with session_maker() as session:
-        invocation = await session.get(ToolInvocation, invocation_id)
-        if not invocation:
-            return None
-
-        invocation.success = success
-        invocation.response = response
-        invocation.error_message = error_message
-        invocation.completed_at = datetime.utcnow()
-
-        await session.commit()
-        await session.refresh(invocation)
-        return invocation
-
-
-async def get_call_tool_invocations(call_id: int) -> List[ToolInvocation]:
-    """Get all tool invocations for a call."""
-    async with session_maker() as session:
-        stmt = (
-            select(ToolInvocation)
-            .where(ToolInvocation.call_id == call_id)
-            .order_by(ToolInvocation.invoked_at)
-        )
-        result = await session.execute(stmt)
-        return list(result.scalars().all())
 
 
 # Call Transcription Repository Functions

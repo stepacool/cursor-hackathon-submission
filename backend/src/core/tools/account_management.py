@@ -20,7 +20,6 @@ from infrastructure.repositories import (
 
 async def open_account(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: OpenAccountToolCallParameters,
 ) -> str:
@@ -49,7 +48,6 @@ async def open_account(
 
 async def close_account_tool(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: CloseAccountToolCallParameters,
 ) -> str:
@@ -90,7 +88,6 @@ async def close_account_tool(
             transfer_to_account.id,
             account.balance,
             call_id=call_id,
-            tool_invocation_id=tool_invocation_id,
         )
 
     # Close the account
@@ -108,7 +105,6 @@ async def close_account_tool(
 
 async def freeze_account(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: FreezeAccountToolCallParameters,
 ) -> str:
@@ -136,7 +132,6 @@ async def freeze_account(
 
 async def unfreeze_account(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: UnfreezeAccountToolCallParameters,
 ) -> str:
