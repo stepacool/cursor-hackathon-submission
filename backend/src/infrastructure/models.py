@@ -36,6 +36,22 @@ class TransactionStatus(PyEnum):
     FAILED = "failed"
 
 
+class BillType(PyEnum):
+    ELECTRICITY = "electricity"
+    WATER = "water"
+    GAS = "gas"
+    INTERNET = "internet"
+    TV = "tv"
+    PHONE = "phone"
+    OTHER = "other"
+
+
+class BillStatus(PyEnum):
+    PENDING = "pending"
+    PAID = "paid"
+    OVERDUE = "overdue"
+
+
 class ToolType(PyEnum):
     TRANSFER_MONEY = "transfer_money"
     CHECK_BALANCE = "check_balance"
@@ -54,81 +70,23 @@ class BankAccount(CustomBase):
     currency: Mapped[str] = mapped_column(String(3), default="USD")
     status: Mapped[AccountStatus] = mapped_column(default=AccountStatus.ACTIVE)
 
+    title: Mapped[str] = mapped_column(String(255))
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     outgoing_transactions: Mapped[List["Transaction"]] = relationship(
-        foreign_keys="Transaction.from_account_id",
-        back_populates="from_account"
+        foreign_keys="Transaction.from_account_id", back_populates="from_account"
     )
     incoming_transactions: Mapped[List["Transaction"]] = relationship(
-        foreign_keys="Transaction.to_account_id",
-        back_populates="to_account"
+        foreign_keys="Transaction.to_account_id", back_populates="to_account"
     )
 
-    __table_args__ = (
-        Index('ix_account_user_status', 'user_id', 'status'),
-    )
-
-
-class Call(CustomBase):
-    __tablename__ = "calls"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(255), index=True)
-    
-    phone_number: Mapped[str] = mapped_column(String(255))
-
-    scheduled_at: Mapped[datetime] = mapped_column(DateTime)
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-
-    status: Mapped[CallStatus] = mapped_column(default=CallStatus.SCHEDULED)
-    call_sid: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
-    duration_seconds: Mapped[Optional[int]] = mapped_column(nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    language: Mapped[str] = mapped_column(String(255))
-    customer_name: Mapped[str] = mapped_column(String(255))
-
-    # Relationships
-    transcriptions: Mapped[List["CallTranscription"]] = relationship(
-        back_populates="call",
-        cascade="all, delete-orphan"
-    )
-    tool_invocations: Mapped[List["ToolInvocation"]] = relationship(
-        back_populates="call",
-        cascade="all, delete-orphan"
-    )
-    transactions: Mapped[List["Transaction"]] = relationship(back_populates="call")
-
-    __table_args__ = (
-        Index('ix_call_user_scheduled', 'user_id', 'scheduled_at'),
-    )
-
-
-class CallTranscription(CustomBase):
-    __tablename__ = "call_transcriptions"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), index=True)
-
-    sequence: Mapped[int] = mapped_column()
-    speaker: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    text: Mapped[str] = mapped_column(Text)
-    confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 4), nullable=True)
-
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    offset_ms: Mapped[Optional[int]] = mapped_column(nullable=True)  # Milliseconds from call start
-
-    # Relationships
-    call: Mapped["Call"] = relationship(back_populates="transcriptions")
-
-    __table_args__ = (
-        Index('ix_transcription_call_seq', 'call_id', 'sequence'),
-    )
+    __table_args__ = (Index("ix_account_user_status", "user_id", "status"),)
 
 
 class Transaction(CustomBase):
@@ -138,14 +96,10 @@ class Transaction(CustomBase):
     reference: Mapped[str] = mapped_column(String(100), unique=True, index=True)
 
     from_account_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("bank_accounts.id"),
-        nullable=True,
-        index=True
+        ForeignKey("bank_accounts.id"), nullable=True, index=True
     )
     to_account_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("bank_accounts.id"),
-        nullable=True,
-        index=True
+        ForeignKey("bank_accounts.id"), nullable=True, index=True
     )
 
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
@@ -155,11 +109,11 @@ class Transaction(CustomBase):
     status: Mapped[TransactionStatus] = mapped_column(default=TransactionStatus.PENDING)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    call_id: Mapped[Optional[int]] = mapped_column(ForeignKey("calls.id"), nullable=True, index=True)
+    call_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("calls.id"), nullable=True, index=True
+    )
     tool_invocation_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("tool_invocations.id"),
-        nullable=True,
-        index=True
+        ForeignKey("tool_invocations.id"), nullable=True, index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -167,28 +121,108 @@ class Transaction(CustomBase):
 
     # Relationships
     from_account: Mapped[Optional["BankAccount"]] = relationship(
-        foreign_keys=[from_account_id],
-        back_populates="outgoing_transactions"
+        foreign_keys=[from_account_id], back_populates="outgoing_transactions"
     )
     to_account: Mapped[Optional["BankAccount"]] = relationship(
-        foreign_keys=[to_account_id],
-        back_populates="incoming_transactions"
+        foreign_keys=[to_account_id], back_populates="incoming_transactions"
     )
     call: Mapped[Optional["Call"]] = relationship(back_populates="transactions")
-    tool_invocation: Mapped[Optional["ToolInvocation"]] = relationship(back_populates="transaction")
+    tool_invocation: Mapped[Optional["ToolInvocation"]] = relationship(
+        back_populates="transaction"
+    )
 
     __table_args__ = (
-        Index('ix_transaction_from_created', 'from_account_id', 'created_at'),
-        Index('ix_transaction_to_created', 'to_account_id', 'created_at'),
-        Index('ix_transaction_status', 'status'),
+        Index("ix_transaction_from_created", "from_account_id", "created_at"),
+        Index("ix_transaction_to_created", "to_account_id", "created_at"),
+        Index("ix_transaction_status", "status"),
     )
+
+
+# class Bill(CustomBase):
+#     __tablename__ = "bills"
+
+#     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+#     user_id: Mapped[str] = mapped_column(String(255), index=True)
+#     type: Mapped[BillType] = mapped_column()
+#     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+#     currency: Mapped[str] = mapped_column(String(3), default="USD")
+#     due_date: Mapped[datetime] = mapped_column(DateTime)
+#     status: Mapped[BillStatus] = mapped_column(default=BillStatus.PENDING)
+
+#     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+#     updated_at: Mapped[datetime] = mapped_column(
+#         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+#     )
+#     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+#     __table_args__ = (Index("ix_bill_user_status", "user_id", "status"),)
+
+
+class Call(CustomBase):
+    __tablename__ = "calls"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), index=True)
+
+    phone_number: Mapped[str] = mapped_column(String(255))
+
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    status: Mapped[CallStatus] = mapped_column(default=CallStatus.SCHEDULED)
+    call_sid: Mapped[Optional[str]] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
+    duration_seconds: Mapped[Optional[int]] = mapped_column(nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    language: Mapped[str] = mapped_column(String(255))
+    customer_name: Mapped[str] = mapped_column(String(255))
+
+    # Relationships
+    transcriptions: Mapped[List["CallTranscription"]] = relationship(
+        back_populates="call", cascade="all, delete-orphan"
+    )
+    tool_invocations: Mapped[List["ToolInvocation"]] = relationship(
+        back_populates="call", cascade="all, delete-orphan"
+    )
+    transactions: Mapped[List["Transaction"]] = relationship(back_populates="call")
+
+    __table_args__ = (Index("ix_call_user_scheduled", "user_id", "scheduled_at"),)
+
+
+class CallTranscription(CustomBase):
+    __tablename__ = "call_transcriptions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), index=True
+    )
+
+    sequence: Mapped[int] = mapped_column()
+    speaker: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    text: Mapped[str] = mapped_column(Text)
+    confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 4), nullable=True)
+
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    offset_ms: Mapped[Optional[int]] = mapped_column(
+        nullable=True
+    )  # Milliseconds from call start
+
+    # Relationships
+    call: Mapped["Call"] = relationship(back_populates="transcriptions")
+
+    __table_args__ = (Index("ix_transcription_call_seq", "call_id", "sequence"),)
 
 
 class ToolInvocation(CustomBase):
     __tablename__ = "tool_invocations"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"), index=True)
+    call_id: Mapped[int] = mapped_column(
+        ForeignKey("calls.id", ondelete="CASCADE"), index=True
+    )
 
     tool_type: Mapped[ToolType] = mapped_column()
     parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
@@ -202,8 +236,8 @@ class ToolInvocation(CustomBase):
 
     # Relationships
     call: Mapped["Call"] = relationship(back_populates="tool_invocations")
-    transaction: Mapped[Optional["Transaction"]] = relationship(back_populates="tool_invocation")
-
-    __table_args__ = (
-        Index('ix_tool_call_invoked', 'call_id', 'invoked_at'),
+    transaction: Mapped[Optional["Transaction"]] = relationship(
+        back_populates="tool_invocation"
     )
+
+    __table_args__ = (Index("ix_tool_call_invoked", "call_id", "invoked_at"),)
