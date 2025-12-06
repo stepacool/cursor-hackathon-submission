@@ -14,7 +14,9 @@ import {
   Settings,
   HelpCircle,
   Building2,
+  PhoneCall,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -81,7 +83,7 @@ export function Sidebar() {
       title: "ACCOUNT",
       items: [
         {
-          label: "Security",
+          label: "Security & Setting",
           href: "/dashboard/security",
           icon: <Shield className="size-4" />,
           description: "Manage your profile & voice authentication",
@@ -211,15 +213,16 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-border/50 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-linear-to-br from-violet-500/10 to-fuchsia-500/10 p-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-fuchsia-500">
-              <Shield className="size-4 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium">Voice Auth™</p>
-              <p className="text-[10px] text-muted-foreground">Secured & Protected</p>
-            </div>
-          </div>
+          <Button
+            size="lg"
+            className="mt-4 w-full gap-2 rounded-2xl bg-primary py-5 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/40 hover:bg-primary/90"
+          >
+            <PhoneCall className="size-5" />
+            Get a Call
+          </Button>
+          <p className="mt-3 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+            © 2025 Nex Bank
+          </p>
         </div>
       </aside>
 

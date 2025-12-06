@@ -27,3 +27,30 @@ export interface TransactionsResponse {
   data?: Transaction[];
   error?: string;
 }
+
+export interface CreateTransactionRequest {
+  fromAccountId: number;
+  toAccountNumber: string;
+  amount: number;
+  recipientName?: string;
+  note?: string;
+}
+
+export interface CreateTransactionResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: {
+    transaction: Transaction;
+    balances?: {
+      fromAccount: {
+        id: number;
+        balance: string;
+      };
+      toAccount: {
+        id: number;
+        balance: string;
+      };
+    };
+  };
+}

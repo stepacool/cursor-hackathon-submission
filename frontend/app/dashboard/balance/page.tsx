@@ -7,7 +7,6 @@ import {
   RefreshCw,
   TrendingUp,
   TrendingDown,
-  CreditCard,
   ArrowUpRight,
   ArrowDownLeft,
   Wallet,
@@ -30,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { BankAccount } from "@/types/bank-account";
+import type { Transaction, TransactionsResponse } from "@/types/transaction";
 
 // Account interface for local state
 interface Account {
@@ -42,6 +42,102 @@ interface Account {
   created_at: string;
 }
 
+interface DisplayTransaction {
+  id: number;
+  description: string;
+  amount: number;
+  dateLabel: string;
+  fullDate: string;
+  time: string;
+  type: "credit" | "debit";
+  icon: string;
+  category: string;
+  currency: string;
+}
+
+const getTransactionLabel = (type: Transaction["type"]) => {
+  switch (type) {
+    case "TRANSFER":
+      return "Money Transfer";
+    case "DEPOSIT":
+      return "Balance Top Up";
+    case "WITHDRAWAL":
+      return "Withdrawal";
+    default:
+      return type;
+  }
+};
+
+const getTransactionIcon = (type: Transaction["type"]) => {
+  switch (type) {
+    case "TRANSFER":
+      return "💸";
+    case "DEPOSIT":
+      return "💳";
+    case "WITHDRAWAL":
+      return "💰";
+    default:
+      return "💵";
+  }
+};
+
+const formatRelativeDate = (dateInput: string | Date) => {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const mapTransactionToDisplay = (
+  txn: Transaction,
+  accountId: number,
+  formatFullDate: (dateString: string) => string
+): DisplayTransaction => {
+  const parsedAmount = parseFloat(txn.amount);
+  const createdAt = new Date(txn.created_at);
+  const isCredit = txn.to_account_id === accountId;
+  const safeAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const isValidDate = !Number.isNaN(createdAt.getTime());
+  const dateLabel = isValidDate ? formatRelativeDate(createdAt) : "";
+  const fullDate = isValidDate ? formatFullDate(txn.created_at) : "";
+  const time = isValidDate
+    ? createdAt.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
+  return {
+    id: txn.id,
+    description: txn.description || getTransactionLabel(txn.type),
+    amount: isCredit ? safeAmount : -safeAmount,
+    dateLabel,
+    fullDate,
+    time,
+    type: isCredit ? "credit" : "debit",
+    icon: getTransactionIcon(txn.type),
+    category: getTransactionLabel(txn.type),
+    currency: txn.currency,
+  };
+};
+
 export default function BalancePage() {
   const [showBalance, setShowBalance] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,46 +145,93 @@ export default function BalancePage() {
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
 
-  // Fetch accounts on mount
+  // Fetch accounts and transactions on mount
   useEffect(() => {
     fetchAccounts();
+    fetchTransactions();
   }, []);
 
   const fetchAccounts = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/accounts');
+      const response = await fetch("/api/accounts");
       const result = await response.json();
 
       if (result.success && result.data) {
-        const mappedAccounts: Account[] = (result.data as BankAccount[]).map(acc => ({
-          id: acc.id,
-          account_number: acc.account_number,
-          title: acc.title,
-          balance: parseFloat(acc.balance),
-          currency: acc.currency,
-          status: acc.status,
-          created_at: acc.created_at,
-        }));
+        const mappedAccounts: Account[] = (result.data as BankAccount[]).map(
+          (acc) => ({
+            id: acc.id,
+            account_number: acc.account_number,
+            title: acc.title,
+            balance: parseFloat(acc.balance),
+            currency: acc.currency,
+            status: acc.status,
+            created_at: acc.created_at,
+          })
+        );
         setAllAccounts(mappedAccounts);
-        
+
         // Set first active account as default
-        const firstActive = mappedAccounts.find(a => a.status === "ACTIVE");
+        const firstActive = mappedAccounts.find((a) => a.status === "ACTIVE");
         if (firstActive) {
           setSelectedAccountId(firstActive.id.toString());
         } else if (mappedAccounts.length > 0) {
           setSelectedAccountId(mappedAccounts[0].id.toString());
         }
       } else {
-        toast.error(result.error || 'Failed to fetch accounts');
+        toast.error(result.error || "Failed to fetch accounts");
       }
     } catch (error) {
-      console.error('Error fetching accounts:', error);
-      toast.error('Failed to fetch accounts');
+      console.error("Error fetching accounts:", error);
+      toast.error("Failed to fetch accounts");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      setIsLoadingTransactions(true);
+      const response = await fetch("/api/transactions");
+      const result: TransactionsResponse = await response.json();
+
+      if (result.success && result.data) {
+        const transactionData = Array.isArray(result.data)
+          ? result.data
+          : [result.data];
+
+        setTransactions(transactionData as Transaction[]);
+      } else {
+        toast.error(result.error || "Failed to fetch transactions");
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      toast.error("Failed to fetch transactions");
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
+
+  const maskAccountNumber = (number: string) => {
+    return `•••• ${number.slice(-4)}`;
+  };
+
+  const formatCurrency = (amount: number, currency: string = "USD") => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   // Get active accounts only
@@ -100,208 +243,30 @@ export default function BalancePage() {
   
   const checkingBalance = selectedAccount?.balance || 0;
 
-  // Mock data - in real app this would come from API
+  const accountTransactions: DisplayTransaction[] = selectedAccount
+    ? transactions
+        .filter(
+          (txn) =>
+            txn.from_account_id === selectedAccount.id ||
+            txn.to_account_id === selectedAccount.id
+        )
+        .map((txn) => mapTransactionToDisplay(txn, selectedAccount.id, formatDate))
+    : [];
+
+  const recentTransactions = accountTransactions.slice(0, 5);
+
+  // Placeholder monthly stats until backend aggregates are available
   const monthlySpending = 2847.5;
   const monthlyIncome = 7500.0;
 
-  // Extended transaction data for modal
-  const allTransactions = [
-    {
-      id: 1,
-      description: "Coffee Shop",
-      amount: -4.5,
-      date: "Today",
-      fullDate: "Dec 6, 2025",
-      time: "10:30 AM",
-      type: "debit",
-      icon: "☕",
-      category: "Food & Dining",
-    },
-    {
-      id: 2,
-      description: "Salary Deposit",
-      amount: 5000.0,
-      date: "Yesterday",
-      fullDate: "Dec 5, 2025",
-      time: "09:00 AM",
-      type: "credit",
-      icon: "💰",
-      category: "Income",
-    },
-    {
-      id: 3,
-      description: "Electric Bill",
-      amount: -125.0,
-      date: "Dec 4",
-      fullDate: "Dec 4, 2025",
-      time: "02:15 PM",
-      type: "debit",
-      icon: "⚡",
-      category: "Utilities",
-    },
-    {
-      id: 4,
-      description: "Grocery Store",
-      amount: -67.89,
-      date: "Dec 3",
-      fullDate: "Dec 3, 2025",
-      time: "05:45 PM",
-      type: "debit",
-      icon: "🛒",
-      category: "Food & Dining",
-    },
-    {
-      id: 5,
-      description: "Freelance Payment",
-      amount: 850.0,
-      date: "Dec 2",
-      fullDate: "Dec 2, 2025",
-      time: "11:20 AM",
-      type: "credit",
-      icon: "💼",
-      category: "Income",
-    },
-    {
-      id: 6,
-      description: "Netflix Subscription",
-      amount: -15.99,
-      date: "Dec 1",
-      fullDate: "Dec 1, 2025",
-      time: "08:00 AM",
-      type: "debit",
-      icon: "🎬",
-      category: "Entertainment",
-    },
-    {
-      id: 7,
-      description: "Gas Station",
-      amount: -45.0,
-      date: "Nov 30",
-      fullDate: "Nov 30, 2025",
-      time: "07:30 AM",
-      type: "debit",
-      icon: "⛽",
-      category: "Transportation",
-    },
-    {
-      id: 8,
-      description: "Restaurant",
-      amount: -89.5,
-      date: "Nov 29",
-      fullDate: "Nov 29, 2025",
-      time: "07:30 PM",
-      type: "debit",
-      icon: "🍽️",
-      category: "Food & Dining",
-    },
-    {
-      id: 9,
-      description: "Online Shopping",
-      amount: -234.99,
-      date: "Nov 28",
-      fullDate: "Nov 28, 2025",
-      time: "03:15 PM",
-      type: "debit",
-      icon: "🛍️",
-      category: "Shopping",
-    },
-    {
-      id: 10,
-      description: "Client Payment",
-      amount: 1500.0,
-      date: "Nov 27",
-      fullDate: "Nov 27, 2025",
-      time: "10:00 AM",
-      type: "credit",
-      icon: "💼",
-      category: "Income",
-    },
-    {
-      id: 11,
-      description: "Gym Membership",
-      amount: -49.99,
-      date: "Nov 26",
-      fullDate: "Nov 26, 2025",
-      time: "06:00 AM",
-      type: "debit",
-      icon: "💪",
-      category: "Health & Fitness",
-    },
-    {
-      id: 12,
-      description: "Pharmacy",
-      amount: -32.45,
-      date: "Nov 25",
-      fullDate: "Nov 25, 2025",
-      time: "04:20 PM",
-      type: "debit",
-      icon: "💊",
-      category: "Health & Fitness",
-    },
-    {
-      id: 13,
-      description: "Uber Ride",
-      amount: -18.75,
-      date: "Nov 24",
-      fullDate: "Nov 24, 2025",
-      time: "09:45 PM",
-      type: "debit",
-      icon: "🚗",
-      category: "Transportation",
-    },
-    {
-      id: 14,
-      description: "Book Store",
-      amount: -42.0,
-      date: "Nov 23",
-      fullDate: "Nov 23, 2025",
-      time: "02:30 PM",
-      type: "debit",
-      icon: "📚",
-      category: "Shopping",
-    },
-    {
-      id: 15,
-      description: "Refund",
-      amount: 156.0,
-      date: "Nov 22",
-      fullDate: "Nov 22, 2025",
-      time: "11:15 AM",
-      type: "credit",
-      icon: "↩️",
-      category: "Refund",
-    },
-  ];
-
-  const recentTransactions = allTransactions.slice(0, 5);
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchAccounts();
+    await Promise.all([fetchAccounts(), fetchTransactions()]);
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
   const handleAccountChange = (accountId: string) => {
     setSelectedAccountId(accountId);
-  };
-
-  const maskAccountNumber = (number: string) => {
-    return `•••• ${number.slice(-4)}`;
-  };
-
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   // Show loading state
@@ -445,7 +410,9 @@ export default function BalancePage() {
                     <span className="text-sm text-white/60">Income</span>
                   </div>
                   <p className="text-xl font-semibold text-emerald-400">
-                    {showBalance ? formatCurrency(monthlyIncome) : "••••"}
+                    {showBalance
+                      ? formatCurrency(monthlyIncome, selectedAccount.currency)
+                      : "••••"}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/5 p-4 backdrop-blur-sm">
@@ -454,7 +421,9 @@ export default function BalancePage() {
                     <span className="text-sm text-white/60">Spending</span>
                   </div>
                   <p className="text-xl font-semibold text-rose-400">
-                    {showBalance ? formatCurrency(monthlySpending) : "••••"}
+                    {showBalance
+                      ? formatCurrency(monthlySpending, selectedAccount.currency)
+                      : "••••"}
                   </p>
                 </div>
               </div>
@@ -478,50 +447,65 @@ export default function BalancePage() {
         </div>
 
         <div className="rounded-2xl border border-border/50 bg-card/50 overflow-hidden">
-          {recentTransactions.map((transaction, index) => (
-            <div
-              key={transaction.id}
-              className={cn(
-                "flex items-center justify-between p-4 transition-colors hover:bg-accent/50",
-                index !== recentTransactions.length - 1 && "border-b border-border/30"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    "flex size-11 items-center justify-center rounded-xl text-lg",
-                    transaction.type === "credit"
-                      ? "bg-emerald-500/10"
-                      : "bg-muted/50"
-                  )}
-                >
-                  {transaction.icon}
-                </div>
-                <div>
-                  <p className="font-medium">{transaction.description}</p>
-                  <p className="text-sm text-muted-foreground">{transaction.date}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {transaction.type === "credit" ? (
-                  <TrendingUp className="size-4 text-emerald-500" />
-                ) : (
-                  <TrendingDown className="size-4 text-muted-foreground" />
-                )}
-                <span
-                  className={cn(
-                    "font-semibold",
-                    transaction.type === "credit"
-                      ? "text-emerald-500"
-                      : "text-foreground"
-                  )}
-                >
-                  {transaction.type === "credit" ? "+" : ""}
-                  {formatCurrency(transaction.amount)}
-                </span>
-              </div>
+          {isLoadingTransactions ? (
+            <div className="p-6 text-center text-muted-foreground">
+              Loading transactions...
             </div>
-          ))}
+          ) : recentTransactions.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground">
+              No transactions for this account yet
+            </div>
+          ) : (
+            recentTransactions.map((transaction, index) => (
+              <div
+                key={transaction.id}
+                className={cn(
+                  "flex items-center justify-between p-4 transition-colors hover:bg-accent/50",
+                  index !== recentTransactions.length - 1 && "border-b border-border/30"
+                )}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "flex size-11 items-center justify-center rounded-xl text-lg",
+                      transaction.type === "credit"
+                        ? "bg-emerald-500/10"
+                        : "bg-muted/50"
+                    )}
+                  >
+                    {transaction.icon}
+                  </div>
+                  <div>
+                    <p className="font-medium">{transaction.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.dateLabel || transaction.fullDate}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {transaction.type === "credit" ? (
+                    <TrendingUp className="size-4 text-emerald-500" />
+                  ) : (
+                    <TrendingDown className="size-4 text-muted-foreground" />
+                  )}
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      transaction.type === "credit"
+                        ? "text-emerald-500"
+                        : "text-foreground"
+                    )}
+                  >
+                    {transaction.type === "credit" ? "+" : ""}
+                    {formatCurrency(
+                      transaction.amount,
+                      transaction.currency || selectedAccount.currency
+                    )}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -539,57 +523,70 @@ export default function BalancePage() {
           
           <div className="overflow-y-auto px-6 pb-6 max-h-[calc(85vh-120px)]">
             <div className="space-y-1">
-              {allTransactions.map((transaction, index) => (
-                <div
-                  key={transaction.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-accent/50",
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        "flex size-11 items-center justify-center rounded-xl text-lg",
-                        transaction.type === "credit"
-                          ? "bg-emerald-500/10"
-                          : "bg-muted/50"
-                      )}
-                    >
-                      {transaction.icon}
-                    </div>
-                    <div>
-                      <p className="font-medium">{transaction.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{transaction.fullDate}</span>
-                        <span>•</span>
-                        <span>{transaction.time}</span>
-                        <span>•</span>
-                        <span className="rounded-full bg-muted px-2 py-0.5">
-                          {transaction.category}
-                        </span>
+              {isLoadingTransactions ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  Loading transactions...
+                </div>
+              ) : accountTransactions.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  No transactions for this account yet
+                </div>
+              ) : (
+                accountTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-accent/50",
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={cn(
+                          "flex size-11 items-center justify-center rounded-xl text-lg",
+                          transaction.type === "credit"
+                            ? "bg-emerald-500/10"
+                            : "bg-muted/50"
+                        )}
+                      >
+                        {transaction.icon}
+                      </div>
+                      <div>
+                        <p className="font-medium">{transaction.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{transaction.fullDate}</span>
+                          <span>•</span>
+                          <span>{transaction.time}</span>
+                          <span>•</span>
+                          <span className="rounded-full bg-muted px-2 py-0.5">
+                            {transaction.category}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {transaction.type === "credit" ? (
-                      <TrendingUp className="size-4 text-emerald-500" />
-                    ) : (
-                      <TrendingDown className="size-4 text-muted-foreground" />
-                    )}
-                    <span
-                      className={cn(
-                        "font-semibold text-base",
-                        transaction.type === "credit"
-                          ? "text-emerald-500"
-                          : "text-foreground"
+                    <div className="flex items-center gap-3">
+                      {transaction.type === "credit" ? (
+                        <TrendingUp className="size-4 text-emerald-500" />
+                      ) : (
+                        <TrendingDown className="size-4 text-muted-foreground" />
                       )}
-                    >
-                      {transaction.type === "credit" ? "+" : ""}
-                      {formatCurrency(transaction.amount)}
-                    </span>
+                      <span
+                        className={cn(
+                          "font-semibold text-base",
+                          transaction.type === "credit"
+                            ? "text-emerald-500"
+                            : "text-foreground"
+                        )}
+                      >
+                        {transaction.type === "credit" ? "+" : ""}
+                        {formatCurrency(
+                          transaction.amount,
+                          transaction.currency || selectedAccount.currency
+                        )}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </DialogContent>
