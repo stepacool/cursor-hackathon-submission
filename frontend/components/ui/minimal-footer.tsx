@@ -86,9 +86,9 @@ export function MinimalFooter() {
 
 	return (
 		<footer className="relative">
-			<div className="mx-auto max-w-4xl bg-[radial-gradient(35%_80%_at_30%_0%,var(--color-foreground)/.1,transparent)] md:border-x">
+			<div className="mx-auto max-w-6xl bg-[radial-gradient(35%_80%_at_30%_0%,var(--color-foreground)/.1,transparent)] md:border-x">
 				<div className="bg-border absolute inset-x-0 h-px w-full" />
-				<div className="grid max-w-4xl grid-cols-6 gap-6 p-4">
+				<div className="grid max-w-6xl grid-cols-6 gap-6 p-4">
 					<div className="col-span-6 flex flex-col gap-5 md:col-span-4">
 						<a href="#" className="w-max opacity-25">
 							<Grid2X2Plus className="size-8" />
@@ -143,7 +143,7 @@ export function MinimalFooter() {
 				</div>
 				<div className="bg-border absolute inset-x-0 h-px w-full" />
 				<div className="flex max-w-4xl flex-col justify-between gap-2 pb-5 pt-2">
-					<p className="text-muted-foreground text-center font-thin">
+					<p className="text-muted-foreground text-center font-thin text-sm">
 						© Digital Bank. All rights reserved {year}
 					</p>
 				</div>

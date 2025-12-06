@@ -14,7 +14,7 @@ export default function Home() {
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-primary/15 via-base-100 to-base-100" />
 
       <header className="sticky top-0 z-20 bg-base-100/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 md:px-0 py-4">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 lg:px-0 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-9 items-center gap-2 rounded-full bg-primary/10 px-3 text-sm font-semibold text-primary">
               <CreditCard className="h-4 w-4" />
@@ -39,7 +39,7 @@ export default function Home() {
 
       <Hero />
       <Feature />
-      <section className="py-20">
+      <section className="py-12">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 md:px-0">
           <div className="text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">

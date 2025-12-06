@@ -10,99 +10,75 @@ const SQRT_5000 = Math.sqrt(5000);
 const testimonials = [
   {
     tempId: 0,
-    testimonial: "My favorite solution in the market. We work 5x faster with COMPANY.",
-    by: "Alex, CEO at TechCorp",
+    testimonial: "Finally, a bank that doesn't feel like a bank. The app is so smooth I actually enjoy checking my balance!",
+    by: "Sarah, Freelance Designer",
     imgSrc: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 1,
-    testimonial: "I'm confident my data is safe with COMPANY. I can't say that about other providers.",
-    by: "Dan, CTO at SecureNet",
+    testimonial: "Setting up my business account took 5 minutes. 5 MINUTES! My old bank needed 3 in-person visits.",
+    by: "Michael, Startup Founder",
     imgSrc: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 2,
-    testimonial: "I know it's cliche, but we were lost before we found COMPANY. Can't thank you guys enough!",
-    by: "Stephanie, COO at InnovateCo",
+    testimonial: "The virtual cards feature is a lifesaver for online subscriptions. I feel so much safer shopping online now.",
+    by: "Elena, Digital Nomad",
     imgSrc: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 3,
-    testimonial: "COMPANY's products make planning for the future seamless. Can't recommend them enough!",
-    by: "Marie, CFO at FuturePlanning",
+    testimonial: "I love how easy it is to split bills with friends. No more awkward math at the dinner table!",
+    by: "David, Software Engineer",
     imgSrc: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 4,
-    testimonial: "If I could give 11 stars, I'd give 12.",
-    by: "Andre, Head of Design at CreativeSolutions",
+    testimonial: "Customer support that actually responds? In seconds? I thought this was a myth until I joined.",
+    by: "Jessica, Small Business Owner",
     imgSrc: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 5,
-    testimonial: "SO SO SO HAPPY WE FOUND YOU GUYS!!!! I'd bet you've saved me 100 hours so far.",
-    by: "Jeremy, Product Manager at TimeWise",
+    testimonial: "The international transfer fees are basically non-existent. I'm saving hundreds every month on vendor payments.",
+    by: "Tom, E-commerce Manager",
     imgSrc: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 6,
-    testimonial: "Took some convincing, but now that we're on COMPANY, we're never going back.",
-    by: "Pam, Marketing Director at BrandBuilders",
+    testimonial: "Instant notifications for every transaction give me such peace of mind. I know exactly what's happening with my money.",
+    by: "Rachel, Marketing Director",
     imgSrc: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=150&q=80"
   },
   {
     tempId: 7,
-    testimonial: "I would be lost without COMPANY's in-depth analytics. The ROI is EASILY 100X for us.",
-    by: "Daniel, Data Scientist at AnalyticsPro",
+    testimonial: "The budgeting tools are incredible. I actually saved enough for a vacation just by following the auto-suggestions.",
+    by: "Chris, Teacher",
     imgSrc: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=150&q=80"
   },
   {
-    tempId: 10,
-    testimonial: "I've been searching for a solution like COMPANY for YEARS. So glad I finally found one!",
-    by: "Pete, Sales Director at RevenueRockets",
+    tempId: 8,
+    testimonial: "Switched my entire team to this platform. Payroll used to take me hours, now it's just a few clicks.",
+    by: "Amanda, Operations Lead",
     imgSrc: "https://images.unsplash.com/photo-1521579971123-1192931a1452?auto=format&fit=crop&w=150&q=80"
   },
   {
-    tempId: 11,
-    testimonial: "It's so simple and intuitive, we got the team up to speed in 10 minutes.",
-    by: "Marina, HR Manager at TalentForge",
+    tempId: 9,
+    testimonial: "Simple, transparent, and fast. Exactly what banking should be in 2024. Love it.",
+    by: "James, Architect",
     imgSrc: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=150&q=80"
   },
   {
-    tempId: 12,
-    testimonial: "COMPANY's customer support is unparalleled. They're always there when we need them.",
-    by: "Olivia, Customer Success Manager at ClientCare",
+    tempId: 10,
+    testimonial: "I was skeptical about a digital-only bank, but the security features are better than my traditional bank.",
+    by: "Robert, Cyber Security Analyst",
     imgSrc: "https://images.unsplash.com/photo-1521119989659-a83eee488004?auto=format&fit=crop&w=150&q=80"
   },
   {
-    tempId: 13,
-    testimonial: "The efficiency gains we've seen since implementing COMPANY are off the charts!",
-    by: "Raj, Operations Manager at StreamlineSolutions",
+    tempId: 11,
+    testimonial: "The rewards program is actually useful. Cash back on things I actually buy? Yes please!",
+    by: "Linda, Nurse",
     imgSrc: "https://images.unsplash.com/photo-1445053023192-8d45cb66099d?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    tempId: 14,
-    testimonial: "COMPANY has revolutionized how we handle our workflow. It's a game-changer!",
-    by: "Lila, Workflow Specialist at ProcessPro",
-    imgSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    tempId: 16,
-    testimonial: "I appreciate how COMPANY continually innovates. They're always one step ahead.",
-    by: "Naomi, Innovation Lead at FutureTech",
-    imgSrc: "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    tempId: 17,
-    testimonial: "The ROI we've seen with COMPANY is incredible. It's paid for itself many times over.",
-    by: "Victor, Finance Analyst at ProfitPeak",
-    imgSrc: "https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6?auto=format&fit=crop&w=150&q=80"
-  },
-  {
-    tempId: 18,
-    testimonial: "COMPANY's platform is so robust, yet easy to use. It's the perfect balance.",
-    by: "Yuki, Tech Lead at BalancedTech",
-    imgSrc: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80"
   },
 ] as const;
 
@@ -127,8 +103,8 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
       className={cn(
         "absolute left-1/2 top-1/2 cursor-pointer border-2 p-8 transition-all duration-500 ease-in-out",
         isCenter
-          ? "z-10 bg-primary text-primary-foreground border-primary"
-          : "z-0 bg-card text-card-foreground border-border hover:border-primary/50"
+          ? "z-10 bg-secondary text-secondary-foreground border-primary shadow-xl"
+          : "z-0 bg-muted/80 text-muted-foreground border-transparent hover:border-primary/50"
       )}
       style={{
         width: cardSize,
@@ -163,7 +139,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
       <h3
         className={cn(
           "text-base font-medium sm:text-xl",
-          isCenter ? "text-primary-foreground" : "text-foreground"
+          isCenter ? "text-secondary-foreground" : "text-muted-foreground"
         )}
       >
         "{testimonial.testimonial}"
@@ -171,7 +147,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
       <p
         className={cn(
           "absolute bottom-8 left-8 right-8 mt-2 text-sm italic",
-          isCenter ? "text-primary-foreground/80" : "text-muted-foreground"
+          isCenter ? "text-secondary-foreground/80" : "text-muted-foreground/80"
         )}
       >
         - {testimonial.by}
