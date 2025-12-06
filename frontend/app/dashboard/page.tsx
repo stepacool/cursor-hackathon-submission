@@ -1,100 +1,70 @@
+import { LayoutDashboard, Shield, Wallet, ArrowLeftRight } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OnboardingDialog } from "@/components/onboarding-dialog";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { CreateOrganizationForm } from "@/components/forms/create-organization-form";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { getOrganizations } from "@/server/organizations";
 
-export default async function Dashboard() {
-  const organizations = await getOrganizations();
-  const hasOrganizations = organizations.length > 0;
+export default function Dashboard() {
+  const features = [
+    {
+      label: "Security",
+      description: "Manage your profile & voice authentication",
+      icon: Shield,
+      href: "/dashboard/security",
+    },
+    {
+      label: "Balance",
+      description: "Check your account balance",
+      icon: Wallet,
+      href: "/dashboard/balance",
+    },
+    {
+      label: "Transaction",
+      description: "Transfer funds securely",
+      icon: ArrowLeftRight,
+      href: "/dashboard/transaction",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-base-100 text-base-content">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mt-10">
-            <h2 className="text-2xl font-semibold">Your organizations</h2>
-            <p className="text-sm text-base-content/60">
-              {hasOrganizations
-                ? "Select a workspace to continue."
-                : "No organizations yet — create one to get started."}
-            </p>
-          </div>
+    <div className="flex h-full flex-col">
+      <OnboardingDialog />
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center px-6 py-12">
+        {/* Icon */}
+        <div className="mb-6 flex size-24 items-center justify-center rounded-2xl border border-border bg-card">
+          <LayoutDashboard className="size-12 text-muted-foreground" />
+        </div>
 
-          {hasOrganizations ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {organizations.map((organization) => (
-                <Card
-                  key={organization.id}
-                  className="border-primary/10 bg-base-200/50 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <CardHeader className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{organization.name}</CardTitle>
-                      <CardDescription className="text-sm">
-                        {organization.slug ? `/${organization.slug}` : "No slug set"}
-                      </CardDescription>
+        {/* Title */}
+        <h1 className="mb-3 font-semibold text-3xl">Welcome to Digital Bank</h1>
+
+        {/* Description */}
+        <p className="mb-8 max-w-md text-center text-muted-foreground">
+          Manage your finances securely with voice authentication. Check your balance, make transfers, and keep your account safe.
+        </p>
+      </div>
+
+      {/* Features Grid */}
+      <div className="border-t border-border bg-card/50 px-6 py-8">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-4 font-semibold text-lg">Quick Access</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {features.map((feature) => (
+              <Link key={feature.label} href={feature.href}>
+                <Card className="h-full border-border transition hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                  <CardHeader className="flex flex-col items-center text-center pb-2">
+                    <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10">
+                      <feature.icon className="size-6 text-primary" />
                     </div>
-                    <CardAction>
-                      <span className="badge badge-outline badge-primary">Active ready</span>
-                    </CardAction>
+                    <CardTitle className="font-medium text-lg">{feature.label}</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex items-center justify-between pt-2">
-                    <p className="text-sm text-base-content/70">
-                      Manage members, roles, and settings in this workspace.
-                    </p>
-                    <Button asChild variant="default" className="gap-2">
-                      <Link href={`/dashboard/organization/${organization.slug}`}>
-                        Open
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                  <CardContent className="text-center">
+                    <CardDescription>{feature.description}</CardDescription>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="border-dashed bg-base-200/50">
-              <CardHeader>
-                <CardTitle>No organizations yet</CardTitle>
-                <CardDescription>
-                  Create your first workspace to invite members and manage access.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="lg">Create organization</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Organization</DialogTitle>
-                      <DialogDescription>
-                        Name your workspace and start inviting teammates.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CreateOrganizationForm />
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-          )}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
