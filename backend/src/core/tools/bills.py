@@ -87,4 +87,4 @@ async def pay_outstanding_bill(
     # Mark bill as paid
     await pay_bill(bill.id, from_account.id, transaction.id)
 
-    return f"Successfully paid {bill_type.value} bill of {bill.amount} from {tool_parameters.from_account_title}"
+    return f"Successfully paid {bill_type.value} bill of {bill.amount} MYR from {tool_parameters.from_account_title}"

@@ -170,7 +170,7 @@ async def list_accounts(
     for account in accounts:
         status_text = account.status.value
         account_list.append(
-            f"- {account.title}: Account #{account.account_number}, Balance: {account.balance}, Status: {status_text}"
+            f"- {account.title}: Account #{account.account_number}, Balance: {account.balance} MYR, Status: {status_text}"
         )
 
     header = f"You have {len(accounts)} account(s):\n"
