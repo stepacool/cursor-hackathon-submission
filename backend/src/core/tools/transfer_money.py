@@ -15,7 +15,6 @@ from infrastructure.repositories import (
 
 async def transfer_money_between_own_accounts(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: TransferMoneyOwnAccountsToolCallParameters,
 ) -> str:
@@ -48,7 +47,6 @@ async def transfer_money_between_own_accounts(
         to_account.id,
         amount,
         call_id=call_id,
-        tool_invocation_id=tool_invocation_id,
     )
 
     if not transaction:
@@ -59,7 +57,6 @@ async def transfer_money_between_own_accounts(
 
 async def transfer_money_to_user(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: TransferMoneyToUserToolCallParameters,
 ) -> str:
@@ -96,7 +93,6 @@ async def transfer_money_to_user(
         recipient_account.id,
         amount,
         call_id=call_id,
-        tool_invocation_id=tool_invocation_id,
     )
 
     if not transaction:

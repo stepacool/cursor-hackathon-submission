@@ -10,7 +10,6 @@ export interface Transaction {
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   description: string | null;
   call_id: number | null;
-  tool_invocation_id: number | null;
   created_at: string; // datetime comes as string from MySQL
   completed_at: string | null;
   updated_at: string | null;

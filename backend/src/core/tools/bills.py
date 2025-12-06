@@ -15,7 +15,6 @@ from infrastructure.repositories import (
 
 async def list_outstanding_bills(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
 ) -> str:
     """List all outstanding bills for the user"""
@@ -39,7 +38,6 @@ async def list_outstanding_bills(
 
 async def pay_outstanding_bill(
     call_id: int,
-    tool_invocation_id: int,
     user_id: str,
     tool_parameters: PayBillToolCallParameters,
 ) -> str:
@@ -85,7 +83,6 @@ async def pay_outstanding_bill(
         to_account_id=None,
         description=f"Payment for {bill_type.value} bill",
         call_id=call_id,
-        tool_invocation_id=tool_invocation_id,
     )
 
     # Mark bill as paid
