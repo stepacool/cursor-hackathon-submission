@@ -10,7 +10,6 @@ Pipfile.lock
 .DS_Store
 .coverage
 .fleet
-.python-version
 venv
 .venv
 session.sql
