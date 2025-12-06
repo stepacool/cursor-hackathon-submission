@@ -142,7 +142,10 @@ export function OnboardingDialog() {
   const onSubmit = async (values: OnboardingFormValues) => {
     try {
       setIsSubmitting(true);
-      const combinedPhone = `${values.countryCode} ${values.phone}`.trim();
+      // Format phone number: remove all non-digits, combine country code and phone
+      const cleanCountryCode = values.countryCode.replace(/\D/g, ""); // Remove + and other non-digits
+      const cleanPhone = values.phone.replace(/\D/g, ""); // Remove all non-digits
+      const formattedPhone = `${cleanCountryCode}${cleanPhone}`;
 
       const response = await fetch("/api/onboarding", {
         method: "POST",
@@ -150,7 +153,7 @@ export function OnboardingDialog() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          phoneNumber: combinedPhone,
+          phoneNumber: formattedPhone,
           accountTitle: values.accountTitle,
           initialBalance: Number(values.balance),
           currency: "MYR",
@@ -186,8 +189,8 @@ export function OnboardingDialog() {
     <Dialog open={open} onOpenChange={() => {
       // Prevent closing the dialog
     }}>
-      <DialogContent
-        className="sm:max-w-[500px]"
+    <DialogContent
+      className="sm:max-w-[500px] p-6"
         onInteractOutside={(e) => {
           // Prevent closing on outside click
           e.preventDefault();

@@ -15,6 +15,9 @@ import {
   HelpCircle,
   Building2,
   PhoneCall,
+  Phone,
+  User,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
@@ -22,9 +25,14 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { getCurrentUser } from "@/server/users";
 
 type NavItem = {
   label: string;
@@ -44,6 +52,104 @@ export function Sidebar() {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Call modal state
+  const [callModalOpen, setCallModalOpen] = useState(false);
+  const [isCreatingCall, setIsCreatingCall] = useState(false);
+  const [userPhoneNumber, setUserPhoneNumber] = useState<string>("");
+
+  const session = authClient.useSession();
+  const userId = session.data?.user?.id;
+  const userName = session.data?.user?.name ?? "";
+
+  // Load phone number from user profile
+  useEffect(() => {
+    if (!userId) return;
+    let isMounted = true;
+
+    async function loadUserProfile() {
+      try {
+        const data = await getCurrentUser();
+        if (isMounted) {
+          setUserPhoneNumber(data.currentUser?.phoneNumber ?? "");
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      }
+    }
+
+    void loadUserProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  // Handle "Get a Call" button click - just open the modal
+  const handleGetACall = () => {
+    if (!userId || !userPhoneNumber) {
+      toast.error("Please set up your phone number in Security settings first");
+      return;
+    }
+
+    if (!userName) {
+      toast.error("Unable to retrieve your name. Please try again.");
+      return;
+    }
+
+    // Just open the modal without creating record
+    setCallModalOpen(true);
+  };
+
+  // Handle confirm call - create record with SCHEDULED status
+  const handleConfirmCall = async () => {
+    if (!userId || !userPhoneNumber || !userName) {
+      toast.error("Missing required information");
+      return;
+    }
+
+    // Format phone to pure digits (e.g., "60189870883")
+    const formattedPhone = userPhoneNumber.replace(/\D/g, "");
+
+    if (!formattedPhone) {
+      toast.error("Invalid phone number format");
+      return;
+    }
+
+    setIsCreatingCall(true);
+    try {
+      const response = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: formattedPhone,
+          scheduledAt: new Date().toISOString(),
+          status: "SCHEDULED",
+          customerName: userName,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Failed to schedule call");
+        return;
+      }
+
+      toast.success("Call scheduled successfully! We will call you shortly.");
+      setCallModalOpen(false);
+    } catch (error) {
+      console.error("Error scheduling call:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsCreatingCall(false);
+    }
+  };
+
+  // Handle cancel call - just close modal without creating record
+  const handleCancelCall = () => {
+    setCallModalOpen(false);
+  };
 
   const sections: NavSection[] = [
     {
@@ -215,7 +321,8 @@ export function Sidebar() {
         <div className="border-t border-border/50 p-4">
           <Button
             size="lg"
-            className="mt-4 w-full gap-2 rounded-2xl bg-primary py-5 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/40 hover:bg-primary/90"
+            onClick={handleGetACall}
+            className="mt-4 w-full gap-2 rounded-2xl bg-primary py-5 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/40 hover:bg-primary/90 cursor-pointer"
           >
             <PhoneCall className="size-5" />
             Get a Call
@@ -225,6 +332,79 @@ export function Sidebar() {
           </p>
         </div>
       </aside>
+
+      {/* Call Confirmation Modal */}
+      <Dialog open={callModalOpen} onOpenChange={(open) => {
+        if (!open && !isCreatingCall) {
+          handleCancelCall();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600">
+                <Phone className="size-5 text-white" />
+              </div>
+              Confirm Call Request
+            </DialogTitle>
+            <DialogDescription>
+              We will call you at the phone number below to assist with your banking needs.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* User Info Card */}
+            <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-violet-500/10">
+                  <User className="size-4 text-violet-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Account Name</p>
+                  <p className="font-medium">{userName}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <Phone className="size-4 text-emerald-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Phone Number</p>
+                  <p className="font-medium">{userPhoneNumber}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Note */}
+            <p className="text-sm text-muted-foreground text-center">
+              By confirming, you agree to receive a call from our support team.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelCall}
+              disabled={isCreatingCall}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmCall}
+              disabled={isCreatingCall}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isCreatingCall ? (
+                <Loader2 className="size-4 animate-spin mr-2" />
+              ) : null}
+              Confirm Call
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Search Dialog */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>

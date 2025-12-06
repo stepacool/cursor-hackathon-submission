@@ -102,3 +102,40 @@ export const getUsers = async (organizationId: string) => {
     return [];
   }
 };
+
+export const updateUser = async (data: {
+  phoneNumber?: string;
+  name?: string;
+}) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return {
+        success: false,
+        message: "Unauthorized",
+      };
+    }
+
+    await db
+      .update(user)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, session.user.id));
+
+    return {
+      success: true,
+      message: "Profile updated successfully.",
+    };
+  } catch (error) {
+    const e = error as Error;
+    return {
+      success: false,
+      message: e.message || "Failed to update profile.",
+    };
+  }
+};

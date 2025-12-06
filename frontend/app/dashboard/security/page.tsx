@@ -18,19 +18,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { getCurrentUser, updateUser } from "@/server/users";
 import { authClient } from "@/lib/auth-client";
-import {
-  readNamespacedItem,
-  STORAGE_KEYS,
-  writeNamespacedItem,
-} from "@/lib/local-storage";
 import { cn } from "@/lib/utils";
 
 export default function SecurityPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [phoneNumber, setPhoneNumber] = useState("+1 (555) 123-4567");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,42 +37,42 @@ export default function SecurityPage() {
   const userName = session.data?.user?.name ?? "";
   const userEmail = session.data?.user?.email ?? "";
 
-  const persistPhone = (value: string) => {
-    writeNamespacedItem(STORAGE_KEYS.securityPhone, value, userId);
-    const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
-      const parsed = profile ? JSON.parse(profile.value) : {};
-      writeNamespacedItem(
-        STORAGE_KEYS.onboarding,
-        JSON.stringify({ ...parsed, phone: value }),
-        userId
-      );
-    } catch {
-      writeNamespacedItem(
-        STORAGE_KEYS.onboarding,
-        JSON.stringify({ phone: value }),
-        userId
-      );
+      const cleanPhone = phoneNumber.trim();
+      
+      // Save to database
+      const result = await updateUser({
+        phoneNumber: cleanPhone,
+      });
+
+      if (result.success) {
+        toast.success("Security settings updated");
+      } else {
+        toast.error(result.message || "Failed to update settings");
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedPhone =
-      readNamespacedItem(STORAGE_KEYS.securityPhone, userId)?.value ||
-      (() => {
-        const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
-        if (!profile) return null;
-        try {
-          const parsed = JSON.parse(profile.value) as { phone?: string };
-          return parsed.phone || null;
-        } catch {
-          return null;
+    async function loadUserData() {
+      if (!userId) return;
+      try {
+        const data = await getCurrentUser();
+        if (data.currentUser?.phoneNumber) {
+          setPhoneNumber(data.currentUser.phoneNumber);
         }
-      })();
-    if (savedPhone) {
-      setPhoneNumber(savedPhone);
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+      }
     }
+    loadUserData();
   }, [userId]);
 
   const startRecording = async () => {
@@ -202,7 +200,6 @@ export default function SecurityPage() {
                     placeholder="+60 123 456 789"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    onBlur={() => persistPhone(phoneNumber.trim())}
                     className="h-11 rounded-xl border-border/50"
                   />
                 </div>
@@ -220,9 +217,10 @@ export default function SecurityPage() {
               </div>
               <Button
                 className="mt-2 rounded-xl"
-                onClick={() => persistPhone(phoneNumber.trim())}
+                onClick={handleSave}
+                disabled={isSaving}
               >
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </div>
