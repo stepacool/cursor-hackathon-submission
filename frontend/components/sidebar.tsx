@@ -18,6 +18,7 @@ import {
   Phone,
   User,
   Loader2,
+  Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
@@ -33,6 +34,13 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { getCurrentUser } from "@/server/users";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type NavItem = {
   label: string;
@@ -57,6 +65,7 @@ export function Sidebar() {
   const [callModalOpen, setCallModalOpen] = useState(false);
   const [isCreatingCall, setIsCreatingCall] = useState(false);
   const [userPhoneNumber, setUserPhoneNumber] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
 
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
@@ -126,6 +135,7 @@ export function Sidebar() {
           scheduledAt: new Date().toISOString(),
           status: "SCHEDULED",
           customerName: userName,
+          language: selectedLanguage,
         }),
       });
 
@@ -372,6 +382,44 @@ export function Sidebar() {
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">Phone Number</p>
                   <p className="font-medium">{userPhoneNumber}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10">
+                  <Languages className="size-4 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground mb-1">Call Language</p>
+                  <Select 
+                    value={selectedLanguage} 
+                    onValueChange={setSelectedLanguage}
+                    disabled={isCreatingCall}
+                  >
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">
+                        <div className="flex items-center gap-2">
+                          <span>🇬🇧</span>
+                          <span>English</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="zh">
+                        <div className="flex items-center gap-2">
+                          <span>🇨🇳</span>
+                          <span>中文 (Chinese)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ms">
+                        <div className="flex items-center gap-2">
+                          <span>🇲🇾</span>
+                          <span>Bahasa Melayu (Malay)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
