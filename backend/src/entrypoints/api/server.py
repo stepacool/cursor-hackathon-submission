@@ -12,6 +12,7 @@ from entrypoints.api.serializers import (
     ToolCallsMessage,
     ToolCallResult,
     ToolCallsResponse,
+    TransferMoneyOwnAccountsToolCallParameters,
 )
 from settings import settings
 
@@ -59,11 +60,11 @@ async def webhook_handler(
     print(tool_calls_msg.model_dump())
 
     call_id = tool_calls_msg.call.id
-    tool_invocation_id = tool_calls_msg.tool_call_list[0].id
+    tool_invocation_id = tool_calls_msg.tool_calls[0].id
     phone_number = payload.message.call.customer.number
     call = await get_call_by_phone_number(phone_number.replace("+", ""))
 
-    tool_name = ToolType(tool_calls_msg.tool_call_list[0].function.name)
+    tool_name = ToolType(tool_calls_msg.tool_calls[0].function.name)
 
     result = None
     if tool_name == ToolType.TRANSFER_MONEY_OWN_ACCOUNTS:
@@ -71,13 +72,15 @@ async def webhook_handler(
             call_id=call_id,
             tool_invocation_id=tool_invocation_id,
             user_id=call.user_id,
-            tool_parameters=tool_calls_msg.tool_call_list[0].function.arguments,
+            tool_parameters=TransferMoneyOwnAccountsToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments
+            ),
         )
 
     return ToolCallsResponse(
         results=[
             ToolCallResult(
-                tool_call_id=tool_calls_msg.tool_call_list[0].id,
+                tool_call_id=tool_calls_msg.tool_calls[0].id,
                 result=result,
             )
         ]
