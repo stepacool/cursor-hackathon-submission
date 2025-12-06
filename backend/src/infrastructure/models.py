@@ -67,7 +67,6 @@ class BankAccount(CustomBase):
     user_id: Mapped[str] = mapped_column(String(255), index=True)
 
     balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0.00"))
-    currency: Mapped[str] = mapped_column(String(3), default="USD")
     status: Mapped[AccountStatus] = mapped_column(default=AccountStatus.ACTIVE)
 
     title: Mapped[str] = mapped_column(String(255))
@@ -103,7 +102,6 @@ class Transaction(CustomBase):
     )
 
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
-    currency: Mapped[str] = mapped_column(String(3), default="USD")
 
     type: Mapped[TransactionType] = mapped_column()
     status: Mapped[TransactionStatus] = mapped_column(default=TransactionStatus.PENDING)
@@ -145,7 +143,6 @@ class Transaction(CustomBase):
 #     user_id: Mapped[str] = mapped_column(String(255), index=True)
 #     type: Mapped[BillType] = mapped_column()
 #     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
-#     currency: Mapped[str] = mapped_column(String(3), default="USD")
 #     due_date: Mapped[datetime] = mapped_column(DateTime)
 #     status: Mapped[BillStatus] = mapped_column(default=BillStatus.PENDING)
 
