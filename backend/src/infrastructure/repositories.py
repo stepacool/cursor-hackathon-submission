@@ -45,7 +45,7 @@ async def get_call_by_phone_number(phone_number: str) -> Optional[Call]:
             Call.phone_number == phone_number,
         ).order_by(Call.created_at.desc())
         result = await session.execute(stmt)
-        return result.first()
+        return result.scalar_one_or_none()
 
 
 async def get_scheduled_calls() -> list[Call]:
