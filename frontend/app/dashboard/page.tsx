@@ -129,7 +129,7 @@ function groupTransactionsByDate(txns: DisplayTransaction[]) {
 export default function Dashboard() {
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [balance, setBalance] = useState(1456);
+  const [balance, setBalance] = useState(0);
   const [primaryAccount, setPrimaryAccount] = useState<BankAccount | null>(
     null
   );
@@ -419,7 +419,7 @@ export default function Dashboard() {
                   <div className="flex flex-col">
                     <p className="text-sm text-white/60">Account</p>
                     <p className="text-lg font-semibold text-white">
-                      {primaryAccount?.title ?? "Primary Account"}
+                      {primaryAccount?.title ?? "----- -----"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">
