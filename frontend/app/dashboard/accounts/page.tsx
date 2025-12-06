@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   X,
@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Shield,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,86 +28,68 @@ import {
   type AccountType,
 } from "@/components/create-account-dialog";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import type { BankAccount } from "@/types/bank-account";
 
 // Account types
-type AccountStatus = "active" | "frozen" | "closed";
+type AccountStatus = "ACTIVE" | "SUSPENDED" | "CLOSED";
 
 interface Account {
-  id: string;
-  name: string;
-  number: string;
+  id: number;
+  account_number: string;
   balance: number;
-  type: AccountType;
+  currency: string;
   status: AccountStatus;
-  createdAt: string;
-  frozenAt?: string;
-  closedAt?: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
 }
 
 // Mock accounts data
-const initialAccounts: Account[] = [
-  {
-    id: "acc-1",
-    name: "Main Checking",
-    number: "4532-8761-7677-8545",
-    balance: 12458.32,
-    type: "checking",
-    status: "active",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "acc-2",
-    name: "Emergency Savings",
-    number: "4532-8761-2345-6789",
-    balance: 45230.15,
-    type: "savings",
-    status: "active",
-    createdAt: "2024-02-20",
-  },
-  {
-    id: "acc-3",
-    name: "Business Account",
-    number: "4532-8761-9876-5432",
-    balance: 8750.0,
-    type: "business",
-    status: "frozen",
-    createdAt: "2024-03-10",
-    frozenAt: "2024-11-15",
-  },
-];
+const initialAccounts: Account[] = [];
 
 const statusConfig = {
-  active: {
+  ACTIVE: {
     label: "Active",
     color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     dotColor: "bg-emerald-500",
   },
-  frozen: {
+  SUSPENDED: {
     label: "Frozen",
     color: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     dotColor: "bg-sky-500",
   },
-  closed: {
+  CLOSED: {
     label: "Closed",
     color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
     dotColor: "bg-rose-500",
   },
 };
 
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number, currency: string = 'USD') => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency,
   }).format(amount);
 };
 
 const maskAccountNumber = (number: string) => {
+  // Handle ACC-XXXXXXXXXX format
   return `•••• ${number.slice(-4)}`;
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Dialog states
   const [openAccountDialog, setOpenAccountDialog] = useState(false);
@@ -118,114 +101,206 @@ export default function AccountsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
+  // Fetch accounts on mount
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/accounts');
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const mappedAccounts: Account[] = (result.data as BankAccount[]).map(acc => ({
+          id: acc.id,
+          account_number: acc.account_number,
+          balance: parseFloat(acc.balance),
+          currency: acc.currency,
+          status: acc.status,
+          created_at: acc.created_at,
+          updated_at: acc.updated_at,
+          closed_at: acc.closed_at,
+        }));
+        setAccounts(mappedAccounts);
+      } else {
+        toast.error(result.error || 'Failed to fetch accounts');
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      toast.error('Failed to fetch accounts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle new account creation
-  const handleAccountCreated = (newAccount: {
-    name: string;
-    type: AccountType;
-    initialDeposit: number;
-    accountNumber: string;
-  }) => {
+  const handleAccountCreated = (newAccount: BankAccount) => {
     const account: Account = {
-      id: `acc-${Date.now()}`,
-      name: newAccount.name,
-      number: newAccount.accountNumber,
-      balance: newAccount.initialDeposit,
-      type: newAccount.type,
-      status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
+      id: newAccount.id,
+      account_number: newAccount.account_number,
+      balance: parseFloat(newAccount.balance),
+      currency: newAccount.currency,
+      status: newAccount.status,
+      created_at: newAccount.created_at,
+      updated_at: newAccount.updated_at,
+      closed_at: newAccount.closed_at,
     };
-    setAccounts((prev) => [...prev, account]);
+    setAccounts((prev) => [account, ...prev]);
   };
 
   // Close Account Handler
-  const handleCloseAccount = () => {
+  const handleCloseAccount = async () => {
     if (!selectedAccount || confirmText !== "CLOSE") return;
 
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/accounts/${selectedAccount.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'close' }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to close account');
+      }
+
+      // Update local state
       setAccounts((prev) =>
         prev.map((acc) =>
           acc.id === selectedAccount.id
             ? {
                 ...acc,
-                status: "closed" as AccountStatus,
-                closedAt: new Date().toISOString().split("T")[0],
+                status: "CLOSED" as AccountStatus,
+                closed_at: result.data.closed_at,
               }
             : acc
         )
       );
-      const updatedAccount = {
-        ...selectedAccount,
-        status: "closed" as AccountStatus,
-      };
+      
+      toast.success('Account closed successfully');
       setCloseAccountDialog(false);
       setConfirmText("");
-      setIsProcessing(false);
       setSelectedAccount(null);
-    }, 1500);
+    } catch (error) {
+      console.error('Error closing account:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to close account');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Freeze Account Handler
-  const handleFreezeAccount = () => {
+  const handleFreezeAccount = async () => {
     if (!selectedAccount) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/accounts/${selectedAccount.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'freeze' }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to freeze account');
+      }
+
+      // Update local state
       setAccounts((prev) =>
         prev.map((acc) =>
           acc.id === selectedAccount.id
             ? {
                 ...acc,
-                status: "frozen" as AccountStatus,
-                frozenAt: new Date().toISOString().split("T")[0],
+                status: "SUSPENDED" as AccountStatus,
+                updated_at: result.data.updated_at,
               }
             : acc
         )
       );
-      const updatedAccount = {
-        ...selectedAccount,
-        status: "frozen" as AccountStatus,
-      };
+      
+      toast.success('Account frozen successfully');
       setFreezeAccountDialog(false);
-      setIsProcessing(false);
       setSelectedAccount(null);
-    }, 1500);
+    } catch (error) {
+      console.error('Error freezing account:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to freeze account');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Unfreeze Account Handler
-  const handleUnfreezeAccount = () => {
+  const handleUnfreezeAccount = async () => {
     if (!selectedAccount) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/accounts/${selectedAccount.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'unfreeze' }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to unfreeze account');
+      }
+
+      // Update local state
       setAccounts((prev) =>
         prev.map((acc) =>
           acc.id === selectedAccount.id
             ? {
                 ...acc,
-                status: "active" as AccountStatus,
-                frozenAt: undefined,
+                status: "ACTIVE" as AccountStatus,
+                updated_at: result.data.updated_at,
               }
             : acc
         )
       );
-      const updatedAccount = {
-        ...selectedAccount,
-        status: "active" as AccountStatus,
-      };
+      
+      toast.success('Account unfrozen successfully');
       setUnfreezeAccountDialog(false);
-      setIsProcessing(false);
       setSelectedAccount(null);
-    }, 1500);
+    } catch (error) {
+      console.error('Error unfreezing account:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to unfreeze account');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const activeAccounts = accounts.filter((a) => a.status === "active");
-  const frozenAccounts = accounts.filter((a) => a.status === "frozen");
-  const closedAccounts = accounts.filter((a) => a.status === "closed");
+  const activeAccounts = accounts.filter((a) => a.status === "ACTIVE");
+  const frozenAccounts = accounts.filter((a) => a.status === "SUSPENDED");
+  const closedAccounts = accounts.filter((a) => a.status === "CLOSED");
 
   const totalBalance = accounts
-    .filter((a) => a.status !== "closed")
+    .filter((a) => a.status !== "CLOSED")
     .reduce((sum, a) => sum + a.balance, 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+          <p className="text-muted-foreground">Loading accounts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -389,12 +464,12 @@ export default function AccountsPage() {
             <div className="space-y-4 py-4">
               {/* Account Info */}
               <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
-                <p className="font-semibold">{selectedAccount.name}</p>
+                <p className="font-semibold">Account {selectedAccount.account_number}</p>
                 <p className="text-sm text-muted-foreground">
-                  {maskAccountNumber(selectedAccount.number)}
+                  {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance)}
+                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
                 </p>
               </div>
 
@@ -408,7 +483,7 @@ export default function AccountsPage() {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Remaining balance of{" "}
-                      {formatCurrency(selectedAccount.balance)} will be
+                      {formatCurrency(selectedAccount.balance, selectedAccount.currency)} will be
                       transferred to your primary account.
                     </p>
                   </div>
@@ -480,12 +555,12 @@ export default function AccountsPage() {
             <div className="space-y-4 py-4">
               {/* Account Info */}
               <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
-                <p className="font-semibold">{selectedAccount.name}</p>
+                <p className="font-semibold">Account {selectedAccount.account_number}</p>
                 <p className="text-sm text-muted-foreground">
-                  {maskAccountNumber(selectedAccount.number)}
+                  {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance)}
+                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
                 </p>
               </div>
 
@@ -581,29 +656,27 @@ export default function AccountsPage() {
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                      statusConfig.frozen.color
+                      statusConfig.SUSPENDED.color
                     )}
                   >
                     <span
                       className={cn(
                         "size-1.5 rounded-full",
-                        statusConfig.frozen.dotColor
+                        statusConfig.SUSPENDED.dotColor
                       )}
                     />
                     Frozen
                   </span>
-                  {selectedAccount.frozenAt && (
-                    <span className="text-xs text-muted-foreground">
-                      since {selectedAccount.frozenAt}
-                    </span>
-                  )}
+                  <span className="text-xs text-muted-foreground">
+                    Updated {formatDate(selectedAccount.updated_at)}
+                  </span>
                 </div>
-                <p className="font-semibold">{selectedAccount.name}</p>
+                <p className="font-semibold">Account {selectedAccount.account_number}</p>
                 <p className="text-sm text-muted-foreground">
-                  {maskAccountNumber(selectedAccount.number)}
+                  {maskAccountNumber(selectedAccount.account_number)}
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  {formatCurrency(selectedAccount.balance)}
+                  {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
                 </p>
               </div>
 
@@ -678,9 +751,9 @@ function AccountCard({
   onClose?: () => void;
   disabled?: boolean;
 }) {
-  const config = accountTypeConfig[account.type];
   const status = statusConfig[account.status];
-  const Icon = config.icon;
+  // Use Wallet as default icon
+  const Icon = Wallet;
 
   return (
     <div
@@ -692,8 +765,7 @@ function AccountCard({
       {/* Background Gradient */}
       <div
         className={cn(
-          "absolute -right-10 -top-10 size-32 rounded-full bg-linear-to-br opacity-10 blur-2xl transition-opacity",
-          config.gradient,
+          "absolute -right-10 -top-10 size-32 rounded-full bg-linear-to-br from-teal-500 to-cyan-600 opacity-10 blur-2xl transition-opacity",
           !disabled && "group-hover:opacity-20"
         )}
       />
@@ -702,10 +774,7 @@ function AccountCard({
         {/* Header */}
         <div className="mb-4 flex items-start justify-between">
           <div
-            className={cn(
-              "flex size-12 items-center justify-center rounded-xl bg-linear-to-br",
-              config.gradient
-            )}
+            className="flex size-12 items-center justify-center rounded-xl bg-linear-to-br from-teal-500 to-cyan-600"
           >
             <Icon className="size-6 text-white" />
           </div>
@@ -722,26 +791,26 @@ function AccountCard({
 
         {/* Account Info */}
         <div className="mb-4">
-          <p className="font-semibold">{account.name}</p>
+          <p className="font-semibold">{account.currency} Account</p>
           <p className="text-sm text-muted-foreground">
-            {maskAccountNumber(account.number)}
+            {maskAccountNumber(account.account_number)}
           </p>
         </div>
 
         {/* Balance */}
         <div className="mb-4">
           <p className="text-2xl font-bold">
-            {formatCurrency(account.balance)}
+            {formatCurrency(account.balance, account.currency)}
           </p>
           <p className="text-xs text-muted-foreground">
-            Opened {account.createdAt}
+            Opened {formatDate(account.created_at)}
           </p>
         </div>
 
         {/* Actions */}
         {!disabled && (
           <div className="flex gap-2">
-            {account.status === "active" && (
+            {account.status === "ACTIVE" && (
               <>
                 <Button
                   variant="outline"
@@ -763,7 +832,7 @@ function AccountCard({
                 </Button>
               </>
             )}
-            {account.status === "frozen" && (
+            {account.status === "SUSPENDED" && (
               <>
                 <Button
                   variant="outline"
@@ -789,9 +858,9 @@ function AccountCard({
         )}
 
         {/* Closed info */}
-        {account.status === "closed" && account.closedAt && (
+        {account.status === "CLOSED" && account.closed_at && (
           <p className="text-xs text-muted-foreground">
-            Closed on {account.closedAt}
+            Closed on {formatDate(account.closed_at)}
           </p>
         )}
       </div>

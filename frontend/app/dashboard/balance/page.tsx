@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Eye,
   EyeOff,
@@ -10,6 +10,7 @@ import {
   CreditCard,
   ArrowUpRight,
   ArrowDownLeft,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,69 +28,75 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  accountTypeConfig,
-  type AccountType,
-} from "@/components/create-account-dialog";
+import { toast } from "sonner";
+import type { BankAccount } from "@/types/bank-account";
 
-// Account interface
+// Account interface for local state
 interface Account {
-  id: string;
-  name: string;
-  number: string;
+  id: number;
+  account_number: string;
   balance: number;
-  type: AccountType;
-  status: "active" | "frozen" | "closed";
-  createdAt: string;
+  currency: string;
+  status: "ACTIVE" | "SUSPENDED" | "CLOSED";
+  created_at: string;
 }
-
-// Mock accounts data - matches accounts page
-const allAccounts: Account[] = [
-  {
-    id: "acc-1",
-    name: "Main Checking",
-    number: "4532-8761-7677-8545",
-    balance: 12458.32,
-    type: "checking",
-    status: "active",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "acc-2",
-    name: "Emergency Savings",
-    number: "4532-8761-2345-6789",
-    balance: 45230.15,
-    type: "savings",
-    status: "active",
-    createdAt: "2024-02-20",
-  },
-  {
-    id: "acc-3",
-    name: "Business Account",
-    number: "4532-8761-9876-5432",
-    balance: 8750.0,
-    type: "business",
-    status: "frozen",
-    createdAt: "2024-03-10",
-  },
-];
 
 export default function BalancePage() {
   const [showBalance, setShowBalance] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>(
-    allAccounts[0].id
-  );
+  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch accounts on mount
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/accounts');
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const mappedAccounts: Account[] = (result.data as BankAccount[]).map(acc => ({
+          id: acc.id,
+          account_number: acc.account_number,
+          balance: parseFloat(acc.balance),
+          currency: acc.currency,
+          status: acc.status,
+          created_at: acc.created_at,
+        }));
+        setAllAccounts(mappedAccounts);
+        
+        // Set first active account as default
+        const firstActive = mappedAccounts.find(a => a.status === "ACTIVE");
+        if (firstActive) {
+          setSelectedAccountId(firstActive.id.toString());
+        } else if (mappedAccounts.length > 0) {
+          setSelectedAccountId(mappedAccounts[0].id.toString());
+        }
+      } else {
+        toast.error(result.error || 'Failed to fetch accounts');
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      toast.error('Failed to fetch accounts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Get active accounts only
-  const activeAccounts = allAccounts.filter((a) => a.status === "active");
+  const activeAccounts = allAccounts.filter((a) => a.status === "ACTIVE");
   
   // Get selected account
   const selectedAccount =
-    allAccounts.find((a) => a.id === selectedAccountId) || allAccounts[0];
+    allAccounts.find((a) => a.id.toString() === selectedAccountId) || allAccounts[0];
   
-  const checkingBalance = selectedAccount.balance;
+  const checkingBalance = selectedAccount?.balance || 0;
 
   // Mock data - in real app this would come from API
   const monthlySpending = 2847.5;
@@ -266,8 +273,9 @@ export default function BalancePage() {
 
   const recentTransactions = allTransactions.slice(0, 5);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
+    await fetchAccounts();
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
@@ -279,12 +287,47 @@ export default function BalancePage() {
     return `•••• ${number.slice(-4)}`;
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: currency,
     }).format(amount);
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+          <p className="text-muted-foreground">Loading accounts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no accounts
+  if (!selectedAccount || allAccounts.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="text-center">
+          <Wallet className="mx-auto mb-4 size-16 text-muted-foreground" />
+          <h2 className="mb-2 text-xl font-semibold">No Accounts Found</h2>
+          <p className="text-muted-foreground">
+            Create your first account to get started
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -327,19 +370,15 @@ export default function BalancePage() {
                       <SelectValue>
                         <div className="flex items-center gap-3">
                           <div className="flex size-12 items-center justify-center rounded-xl bg-white/10">
-                            {(() => {
-                              const Icon = accountTypeConfig[selectedAccount.type].icon;
-                              return <Icon className="size-6" />;
-                            })()}
+                            <Wallet className="size-6" />
                           </div>
                           <div className="text-left">
                             <p className="text-sm text-white/60">
-                              {selectedAccount.name}
+                              {selectedAccount.currency} Account
                             </p>
                             <p className="flex items-center gap-2 text-sm text-white/80">
                               <CreditCard className="size-3" />
-                              {accountTypeConfig[selectedAccount.type].label} •{" "}
-                              {maskAccountNumber(selectedAccount.number)}
+                              {maskAccountNumber(selectedAccount.account_number)}
                             </p>
                           </div>
                         </div>
@@ -347,23 +386,21 @@ export default function BalancePage() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl bg-slate-900 border-slate-700">
                       {activeAccounts.map((account) => {
-                        const config = accountTypeConfig[account.type];
-                        const Icon = config.icon;
                         return (
                           <SelectItem
                             key={account.id}
-                            value={account.id}
+                            value={account.id.toString()}
                             className="rounded-lg text-white focus:bg-white/10 focus:text-white"
                           >
                             <div className="flex items-center gap-3 py-2">
                               <div className="flex size-10 items-center justify-center rounded-lg bg-white/10">
-                                <Icon className="size-5" />
+                                <Wallet className="size-5" />
                               </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{account.name}</p>
+                                <p className="font-semibold text-sm">{account.currency} Account</p>
                                 <p className="text-xs text-white/60">
-                                  {maskAccountNumber(account.number)} •{" "}
-                                  {formatCurrency(account.balance)}
+                                  {maskAccountNumber(account.account_number)} •{" "}
+                                  {formatCurrency(account.balance, account.currency)}
                                 </p>
                               </div>
                             </div>
@@ -388,7 +425,7 @@ export default function BalancePage() {
 
               <div className="mb-8">
                 <p className="text-5xl font-bold tracking-tight">
-                  {showBalance ? formatCurrency(checkingBalance) : "••••••"}
+                  {showBalance ? formatCurrency(checkingBalance, selectedAccount.currency) : "••••••"}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">
@@ -495,7 +532,7 @@ export default function BalancePage() {
               All Transactions
             </DialogTitle>
             <DialogDescription>
-              Complete transaction history for {selectedAccount.name}
+              Complete transaction history for {selectedAccount.currency} Account ({maskAccountNumber(selectedAccount.account_number)})
             </DialogDescription>
           </DialogHeader>
           
