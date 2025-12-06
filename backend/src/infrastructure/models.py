@@ -43,6 +43,7 @@ class BillType(PyEnum):
     INTERNET = "internet"
     TV = "tv"
     PHONE = "phone"
+    PARKING = "parking"
     OTHER = "other"
 
 
@@ -53,7 +54,14 @@ class BillStatus(PyEnum):
 
 
 class ToolType(PyEnum):
-    TRANSFER_MONEY = "transfer_money"
+    TRANSFER_MONEY_OWN_ACCOUNTS = "transfer_money_own_accounts"
+    TRANSFER_MONEY_TO_USER = "transfer_money_to_user"
+    PAY_BILL = "pay_bill"
+    LIST_BILLS = "list_bills"
+    OPEN_ACCOUNT = "open_account"
+    CLOSE_ACCOUNT = "close_account"
+    FREEZE_ACCOUNT = "freeze_account"
+    UNFREEZE_ACCOUNT = "unfreeze_account"
     CHECK_BALANCE = "check_balance"
     GET_HISTORY = "get_history"
 
@@ -136,23 +144,37 @@ class Transaction(CustomBase):
     )
 
 
-# class Bill(CustomBase):
-#     __tablename__ = "bills"
+class Bill(CustomBase):
+    __tablename__ = "bills"
 
-#     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-#     user_id: Mapped[str] = mapped_column(String(255), index=True)
-#     type: Mapped[BillType] = mapped_column()
-#     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
-#     due_date: Mapped[datetime] = mapped_column(DateTime)
-#     status: Mapped[BillStatus] = mapped_column(default=BillStatus.PENDING)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), index=True)
+    type: Mapped[BillType] = mapped_column()
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    due_date: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[BillStatus] = mapped_column(default=BillStatus.PENDING)
 
-#     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-#     updated_at: Mapped[datetime] = mapped_column(
-#         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-#     )
-#     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # Payment tracking
+    paid_from_account_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("bank_accounts.id"), nullable=True, index=True
+    )
+    transaction_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("transactions.id"), nullable=True, index=True
+    )
 
-#     __table_args__ = (Index("ix_bill_user_status", "user_id", "status"),)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    paid_from_account: Mapped[Optional["BankAccount"]] = relationship(
+        foreign_keys=[paid_from_account_id]
+    )
+
+    __table_args__ = (Index("ix_bill_user_status", "user_id", "status"),)
 
 
 class Call(CustomBase):
