@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -15,6 +15,7 @@ import {
 import { OnboardingDialog } from "@/components/onboarding-dialog";
 import { CreateAccountDialog } from "@/components/create-account-dialog";
 import { authClient } from "@/lib/auth-client";
+import { usePolling } from "@/lib/use-polling";
 import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -135,6 +136,7 @@ export default function Dashboard() {
   const [allAccounts, setAllAccounts] = useState<BankAccount[]>([]);
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+  const hasFetchedTransactionsRef = useRef(false);
   const [openAccountDialog, setOpenAccountDialog] = useState(false);
 
   const session = authClient.useSession();
@@ -170,33 +172,34 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
+      throw error;
     }
   }, [userId]);
 
-  // Fetch transactions
-  useEffect(() => {
+  const fetchTransactions = useCallback(async () => {
     if (!userId) return;
 
-    async function fetchTransactions() {
-      try {
-        setIsLoadingTransactions(true);
-        const response = await fetch("/api/transactions");
-        const data: TransactionsResponse = await response.json();
-
-        if (data.success && data.data && userId) {
-          const displayTransactions = data.data.map((txn) =>
-            convertToDisplayTransaction(txn, userId)
-          );
-          setTransactions(displayTransactions);
-        }
-      } catch (error) {
-        console.error("Failed to fetch transactions:", error);
-      } finally {
-        setIsLoadingTransactions(false);
-      }
+    if (!hasFetchedTransactionsRef.current) {
+      setIsLoadingTransactions(true);
     }
 
-    fetchTransactions();
+    try {
+      const response = await fetch("/api/transactions");
+      const data: TransactionsResponse = await response.json();
+
+      if (data.success && data.data && userId) {
+        const displayTransactions = data.data.map((txn) =>
+          convertToDisplayTransaction(txn, userId)
+        );
+        setTransactions(displayTransactions);
+      }
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+      throw error;
+    } finally {
+      hasFetchedTransactionsRef.current = true;
+      setIsLoadingTransactions(false);
+    }
   }, [userId]);
 
   // Load balance from localStorage
@@ -222,10 +225,17 @@ export default function Dashboard() {
     }
   }, [userId]);
 
-  // Fetch accounts to display on the card
-  useEffect(() => {
-    fetchAndUpdateAccounts();
-  }, [fetchAndUpdateAccounts]);
+  usePolling({
+    fetchFn: fetchAndUpdateAccounts,
+    interval: 3000,
+    enabled: Boolean(userId),
+  });
+
+  usePolling({
+    fetchFn: fetchTransactions,
+    interval: 3000,
+    enabled: Boolean(userId),
+  });
 
   // Handle account change
   const handleAccountChange = (accountId: string) => {

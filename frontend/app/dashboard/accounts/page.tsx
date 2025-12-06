@@ -66,6 +66,39 @@ const statusConfig = {
   },
 };
 
+const cardVisualConfig: Record<
+  AccountStatus,
+  {
+    gradient: string;
+    gradientDark: string;
+    glow: string;
+    textColor: string;
+    textColorDark: string;
+  }
+> = {
+  ACTIVE: {
+    gradient: "from-slate-100 via-slate-50 to-white",
+    gradientDark: "dark:from-slate-800 dark:via-slate-900 dark:to-slate-950",
+    glow: "from-white/30 via-transparent to-transparent",
+    textColor: "text-slate-900",
+    textColorDark: "dark:text-white",
+  },
+  SUSPENDED: {
+    gradient: "from-slate-200 via-slate-100 to-slate-50",
+    gradientDark: "dark:from-slate-600 dark:via-slate-700 dark:to-slate-900",
+    glow: "from-white/20 via-transparent to-transparent",
+    textColor: "text-slate-800",
+    textColorDark: "dark:text-white",
+  },
+  CLOSED: {
+    gradient: "from-zinc-200 via-zinc-100 to-zinc-50",
+    gradientDark: "dark:from-zinc-700 dark:via-zinc-800 dark:to-slate-900",
+    glow: "from-white/10 via-transparent to-transparent",
+    textColor: "text-zinc-800",
+    textColorDark: "dark:text-white",
+  },
+};
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -315,8 +348,10 @@ export default function AccountsPage() {
           </p>
         </div>
         <Button
+          variant="outline"
+          size="sm"
           onClick={() => setOpenAccountDialog(true)}
-          className="rounded-xl bg-linear-to-r from-teal-500 to-cyan-600 text-white hover:from-teal-600 hover:to-cyan-700"
+          className="rounded-xl"
         >
           <Plus className="mr-2 size-4" />
           Open New Account
@@ -752,119 +787,191 @@ function AccountCard({
   disabled?: boolean;
 }) {
   const status = statusConfig[account.status];
+  const visuals = cardVisualConfig[account.status];
   // Use Wallet as default icon
   const Icon = Wallet;
 
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 transition-all",
-        disabled ? "opacity-60" : "hover:border-foreground/20 hover:shadow-lg"
+        "group relative flex h-full flex-col overflow-hidden rounded-3xl p-6 shadow-[0_8px_20px_rgba(15,23,42,0.15)] transition-all",
+        visuals.textColor,
+        visuals.textColorDark,
+        !disabled && "hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,23,42,0.25)]"
       )}
     >
-      {/* Background Gradient */}
+      {/* Background layers */}
       <div
         className={cn(
-          "absolute -right-10 -top-10 size-32 rounded-full bg-linear-to-br from-teal-500 to-cyan-600 opacity-10 blur-2xl transition-opacity",
-          !disabled && "group-hover:opacity-20"
+          "pointer-events-none absolute inset-0 bg-linear-to-br",
+          visuals.gradient,
+          visuals.gradientDark
+        )}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 25% 20%, rgba(255,255,255,0.25), transparent 45%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.2), transparent 35%)",
+        }}
+      />
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-linear-to-t",
+          visuals.glow
         )}
       />
 
-      <div className="relative">
-        {/* Header */}
-        <div className="mb-4 flex items-start justify-between">
-          <div
-            className="flex size-12 items-center justify-center rounded-xl bg-linear-to-br from-teal-500 to-cyan-600"
-          >
-            <Icon className="size-6 text-white" />
+      <div className="relative flex h-full flex-col gap-6">
+        <div>
+          {/* Header */}
+          <div className={cn(
+            "mb-6 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em]",
+            "text-slate-600 dark:text-white/70"
+          )}>
+            <span>{status.label} Account</span>
+            <div className="flex items-center gap-2 tracking-normal">
+              <Icon className={cn("size-4", "text-slate-500 dark:text-white/80")} />
+              <span className={cn("text-xs font-medium", "text-slate-500 dark:text-white/80")}>Vault</span>
+            </div>
           </div>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-              status.color
-            )}
-          >
-            <span className={cn("size-1.5 rounded-full", status.dotColor)} />
-            {status.label}
-          </span>
-        </div>
 
-        {/* Account Info */}
-        <div className="mb-4">
-          <p className="font-semibold text-lg">{account.title}</p>
-          <p className="text-sm text-muted-foreground">
+          {/* Chip + Account holder */}
+          <div className="mb-6 flex items-center gap-4">
+            <div className={cn(
+              "flex h-12 w-16 items-center justify-center rounded-xl border backdrop-blur",
+              "border-slate-300 bg-slate-100/50 dark:border-white/40 dark:bg-white/20"
+            )}>
+              <div className="flex gap-1">
+                <span className={cn(
+                  "block h-8 w-3 rounded",
+                  "bg-slate-400 dark:bg-white/70"
+                )} />
+                <span className={cn(
+                  "block h-8 w-3 rounded",
+                  "bg-slate-300 dark:bg-white/40"
+                )} />
+              </div>
+            </div>
+            <div>
+              <p className={cn(
+                "text-[11px] uppercase tracking-[0.3em]",
+                "text-slate-600 dark:text-white/70"
+              )}>
+                Account
+              </p>
+              <p className={cn(
+                "text-lg font-semibold",
+                visuals.textColor,
+                visuals.textColorDark
+              )}>
+                {account.title}
+              </p>
+            </div>
+          </div>
+
+          {/* Account number */}
+          <p className={cn(
+            "mb-2 font-mono text-lg tracking-[0.4em]",
+            "text-slate-700 dark:text-white/90"
+          )}>
             {maskAccountNumber(account.account_number)}
           </p>
-        </div>
 
-        {/* Balance */}
-        <div className="mb-4">
-          <p className="text-2xl font-bold">
-            {formatCurrency(account.balance)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Opened {formatDate(account.created_at)}
-          </p>
-        </div>
-
-        {/* Actions */}
-        {!disabled && (
-          <div className="flex gap-2">
-            {account.status === "ACTIVE" && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onFreeze}
-                  className="flex-1 rounded-xl text-sky-600 hover:bg-sky-500/10 hover:text-sky-600"
-                >
-                  <Snowflake className="mr-1.5 size-3.5" />
-                  Freeze
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onClose}
-                  className="flex-1 rounded-xl text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
-                >
-                  <X className="mr-1.5 size-3.5" />
-                  Close
-                </Button>
-              </>
-            )}
-            {account.status === "SUSPENDED" && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onUnfreeze}
-                  className="flex-1 rounded-xl text-amber-600 hover:bg-amber-500/10 hover:text-amber-600"
-                >
-                  <Sun className="mr-1.5 size-3.5" />
-                  Unfreeze
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onClose}
-                  className="flex-1 rounded-xl text-rose-600 hover:bg-rose-500/10 hover:text-rose-600"
-                >
-                  <X className="mr-1.5 size-3.5" />
-                  Close
-                </Button>
-              </>
-            )}
+          {/* Balance */}
+          <div>
+            <p className={cn(
+              "text-[11px] uppercase tracking-[0.4em]",
+              "text-slate-600 dark:text-white/60"
+            )}>
+              Available Balance
+            </p>
+            <p className={cn(
+              "text-3xl font-semibold",
+              visuals.textColor,
+              visuals.textColorDark
+            )}>
+              {formatCurrency(account.balance)}
+            </p>
           </div>
-        )}
+        </div>
 
-        {/* Closed info */}
-        {account.status === "CLOSED" && account.closed_at && (
-          <p className="text-xs text-muted-foreground">
-            Closed on {formatDate(account.closed_at)}
-          </p>
-        )}
+        <div className={cn(
+          "mt-auto flex flex-wrap items-end justify-between gap-4 border-t pt-4",
+          "border-slate-200 text-slate-700 dark:border-white/20 dark:text-white/80"
+        )}>
+          <div>
+            <p className={cn(
+              "text-[11px] uppercase tracking-[0.3em]",
+              "text-slate-600 dark:text-white/60"
+            )}>
+              Opened
+            </p>
+            <p className={cn(
+              "text-sm font-medium",
+              visuals.textColor,
+              visuals.textColorDark
+            )}>
+              {formatDate(account.created_at)}
+            </p>
+          </div>
+
+          {!disabled && (
+            <div className="flex flex-1 min-w-[220px] gap-2">
+              {account.status === "ACTIVE" && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onFreeze}
+                    className="flex-1 rounded-2xl border border-white/20 bg-white/10 text-white hover:border-white/40 hover:bg-white/20"
+                  >
+                    <Snowflake className="mr-1.5 size-3.5" />
+                    Freeze
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onClose}
+                    className="flex-1 rounded-2xl border border-white/20 bg-white/5 text-white hover:border-white/40 hover:bg-white/15"
+                  >
+                    <X className="mr-1.5 size-3.5" />
+                    Close
+                  </Button>
+                </>
+              )}
+              {account.status === "SUSPENDED" && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onUnfreeze}
+                    className="flex-1 rounded-2xl border border-white/20 bg-white/10 text-white hover:border-white/40 hover:bg-white/20"
+                  >
+                    <Sun className="mr-1.5 size-3.5" />
+                    Unfreeze
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onClose}
+                    className="flex-1 rounded-2xl border border-white/20 bg-white/5 text-white hover:border-white/40 hover:bg-white/15"
+                  >
+                    <X className="mr-1.5 size-3.5" />
+                    Close
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {account.status === "CLOSED" && account.closed_at && (
+            <p className="text-xs text-white/80">
+              Closed on {formatDate(account.closed_at)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
