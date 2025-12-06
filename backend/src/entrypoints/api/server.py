@@ -4,8 +4,8 @@ from fastapi import FastAPI, HTTPException
 from loguru import logger
 from starlette.requests import Request
 
-from backend.src.infrastructure.models import ToolType
-from backend.src.infrastructure.repositories import get_call_by_phone_number
+from src.infrastructure.models import ToolType
+from src.infrastructure.repositories import get_call_by_phone_number
 from core.tools.transfer_money import transfer_money_between_own_accounts
 from entrypoints.api.serializers import (
     ServerWebhookPayload,
