@@ -46,6 +46,16 @@ async def get_call_by_phone_number(phone_number: str) -> Optional[Call]:
         return result.scalar_one_or_none()
 
 
+async def get_scheduled_calls() -> list[Call]:
+    async with session_maker() as session:
+        stmt = select(Call).where(
+            Call.status.in_([CallStatus.SCHEDULED, CallStatus.SCHEDULED.value])
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+
 async def get_calls_by_user(
     user_id: str, status: Optional[CallStatus] = None, limit: int = 50
 ) -> List[Call]:
