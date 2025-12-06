@@ -1,11 +1,20 @@
-from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, HTTPException
+from loguru import logger
 from starlette.requests import Request
 
-from entrypoints.api.serializers import ServerWebhookPayload, ToolCallsMessage, ToolCallResult
+from infrastructure.models import ToolType
+from infrastructure.repositories import get_call_by_phone_number
+from core.tools.transfer_money import transfer_money_between_own_accounts
+from entrypoints.api.serializers import (
+    ServerWebhookPayload,
+    ToolCallsMessage,
+    ToolCallResult,
+    ToolCallsResponse,
+    TransferMoneyOwnAccountsToolCallParameters,
+)
 from settings import settings
-from loguru import logger
 
 
 @asynccontextmanager
@@ -25,11 +34,7 @@ app = FastAPI(
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {
-        "status": "ok",
-        "app": settings.APP_NAME,
-        "database": "connected"
-    }
+    return {"status": "ok", "app": settings.APP_NAME, "database": "connected"}
 
 
 @app.get("/health")
@@ -43,55 +48,43 @@ async def health_check():
 
 @app.post("/webhooks")
 async def webhook_handler(
-        request: Request,
-        payload: ServerWebhookPayload,
-):
+    request: Request,
+    payload: ServerWebhookPayload,
+) -> ToolCallsResponse:
     print(f"new request: {await request.body()}")
 
-    if payload.message.type == "tool-calls":
-        # Cast to the specific message type
-        tool_calls_msg: ToolCallsMessage = payload.message
-        print(tool_calls_msg.model_dump())
+    if payload.message.type != "tool-calls":
+        return {}
 
-        # Get the first tool call ID from the message
-        tool_call_id = tool_calls_msg.tool_call_list[0].id if tool_calls_msg.tool_call_list else "unknown"
+    tool_calls_msg: ToolCallsMessage = payload.message
+    print(tool_calls_msg.model_dump())
 
-        # Return properly formatted response for tool-calls
-        return {
-            "results": [
-                {
-                    "toolCallId": tool_call_id,
-                    "result": "FAILED_TO_TRANSFER_MONEY. ACCOUNT 'SECONDARY' doesn't exist"
-                }
-            ]
-        }
+    call_id = tool_calls_msg.call.id
+    tool_invocation_id = tool_calls_msg.tool_calls[0].id
+    phone_number = payload.message.call.customer.number
+    call = await get_call_by_phone_number(phone_number.replace("+", ""))
 
-    return {}
+    tool_name = ToolType(tool_calls_msg.tool_calls[0].function.name)
 
+    result = None
+    if tool_name == ToolType.TRANSFER_MONEY_OWN_ACCOUNTS:
+        result = await transfer_money_between_own_accounts(
+            call_id=call_id,
+            tool_invocation_id=tool_invocation_id,
+            user_id=call.user_id,
+            tool_parameters=TransferMoneyOwnAccountsToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments
+            ),
+        )
 
-@app.post("/webhooks_v2")
-async def webhook_handler_v2(
-        request: Request,
-        payload: ServerWebhookPayload,
-):
-    print(f"new request: {await request.body()}")
-
-    if payload.message.type == "tool-calls":
-        tool_calls_msg: ToolCallsMessage = payload.message
-        print(tool_calls_msg.model_dump())
-
-        # Build response using Pydantic models
-        results = []
-        for tool_call in tool_calls_msg.tool_call_list or []:
-            results.append(
-                ToolCallResult(
-                    tool_call_id=tool_call.id,
-                    result="FAILED_TO_TRANSFER_MONEY. ACCOUNT 'SECONDARY' doesn't exist"
-                )
+    return ToolCallsResponse(
+        results=[
+            ToolCallResult(
+                tool_call_id=tool_calls_msg.tool_calls[0].id,
+                result=result,
             )
-
-        # Return as dict (FastAPI will serialize)
-        return {"results": [r.model_dump(by_alias=True) for r in results]}
+        ]
+    )
 
     return {}
 
@@ -99,9 +92,4 @@ async def webhook_handler_v2(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

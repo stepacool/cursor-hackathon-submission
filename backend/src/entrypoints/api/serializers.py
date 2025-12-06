@@ -607,3 +607,54 @@ class EndpointingResponse(BaseModel):
     """Response to endpointing request"""
     timeout_seconds: float = Field(..., alias="timeoutSeconds")
     model_config = ConfigDict(populate_by_name=True)
+
+
+# Tool Call Parameters
+
+
+class TransferMoneyOwnAccountsToolCallParameters(BaseModel):
+    """Parameters for transfer money between own accounts tool"""
+    from_account_title: str = Field(..., alias="account_name_from")
+    to_account_title: str = Field(..., alias="account_name_to")
+    amount: float
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class TransferMoneyToUserToolCallParameters(BaseModel):
+    """Parameters for transfer money to another user tool"""
+    from_account_title: str = Field(..., alias="account_name_from")
+    recipient_identifier: str = Field(..., alias="recipient_phone_number")  # phone number
+    amount: float
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PayBillToolCallParameters(BaseModel):
+    """Parameters for pay bill tool"""
+    bill_type: str = Field(..., alias="bill_type")  # electricity, water, gas, etc.
+    from_account_title: str = Field(..., alias="account_name_from")
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class OpenAccountToolCallParameters(BaseModel):
+    """Parameters for open account tool"""
+    account_title: str = Field(..., alias="account_title")
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CloseAccountToolCallParameters(BaseModel):
+    """Parameters for close account tool"""
+    account_title: str = Field(..., alias="account_title")
+    transfer_to_account_title: Optional[str] = Field(None, alias="transfer_to_account")
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class FreezeAccountToolCallParameters(BaseModel):
+    """Parameters for freeze account tool"""
+    account_title: str = Field(..., alias="account_title")
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class UnfreezeAccountToolCallParameters(BaseModel):
+    """Parameters for unfreeze account tool"""
+    account_title: str = Field(..., alias="account_title")
+    model_config = ConfigDict(populate_by_name=True)

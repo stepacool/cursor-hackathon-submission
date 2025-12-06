@@ -7,11 +7,14 @@ from sqlalchemy.orm import selectinload
 from infrastructure.db import session_maker
 from .models import (
     BankAccount,
+    Bill,
     Call,
     CallTranscription,
     Transaction,
     ToolInvocation,
     AccountStatus,
+    BillStatus,
+    BillType,
     CallStatus,
     TransactionStatus,
     TransactionType,
@@ -33,6 +36,14 @@ async def get_call_by_id(call_id: int) -> Optional[Call]:
                 selectinload(Call.transactions),
             )
         )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_call_by_phone_number(phone_number: str) -> Optional[Call]:
+    """Get a call by phone number."""
+    async with session_maker() as session:
+        stmt = select(Call).where(Call.phone_number == phone_number)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -396,3 +407,216 @@ async def get_call_transcriptions(call_id: int) -> List[CallTranscription]:
         )
         result = await session.execute(stmt)
         return list(result.scalars().all())
+
+
+# Bill Repository Functions
+
+
+async def get_bill_by_id(bill_id: int) -> Optional[Bill]:
+    """Get a bill by ID."""
+    async with session_maker() as session:
+        return await session.get(Bill, bill_id)
+
+
+async def get_bills_by_user(
+    user_id: str,
+    status: Optional[BillStatus] = None,
+    bill_type: Optional[BillType] = None,
+) -> List[Bill]:
+    """Get all bills for a user, optionally filtered by status and type."""
+    async with session_maker() as session:
+        stmt = select(Bill).where(Bill.user_id == user_id)
+
+        if status:
+            stmt = stmt.where(Bill.status == status)
+        if bill_type:
+            stmt = stmt.where(Bill.type == bill_type)
+
+        stmt = stmt.order_by(desc(Bill.due_date))
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def get_outstanding_bills(user_id: str) -> List[Bill]:
+    """Get all outstanding (pending or overdue) bills for a user."""
+    async with session_maker() as session:
+        stmt = (
+            select(Bill)
+            .where(Bill.user_id == user_id)
+            .where(
+                or_(
+                    Bill.status == BillStatus.PENDING, Bill.status == BillStatus.OVERDUE
+                )
+            )
+            .order_by(Bill.due_date)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def get_outstanding_bill_by_type(
+    user_id: str, bill_type: BillType
+) -> Optional[Bill]:
+    """Get an outstanding bill of a specific type for a user."""
+    async with session_maker() as session:
+        stmt = (
+            select(Bill)
+            .where(Bill.user_id == user_id)
+            .where(Bill.type == bill_type)
+            .where(
+                or_(
+                    Bill.status == BillStatus.PENDING, Bill.status == BillStatus.OVERDUE
+                )
+            )
+            .order_by(Bill.due_date)
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def create_bill(
+    user_id: str,
+    bill_type: BillType,
+    amount: Decimal,
+    due_date: datetime,
+    description: Optional[str] = None,
+) -> Bill:
+    """Create a new bill."""
+    async with session_maker() as session:
+        bill = Bill(
+            user_id=user_id,
+            type=bill_type,
+            amount=amount,
+            due_date=due_date,
+            description=description,
+            status=BillStatus.PENDING,
+        )
+        session.add(bill)
+        await session.commit()
+        await session.refresh(bill)
+        return bill
+
+
+async def pay_bill(
+    bill_id: int,
+    from_account_id: int,
+    transaction_id: int,
+) -> Optional[Bill]:
+    """Mark a bill as paid."""
+    async with session_maker() as session:
+        bill = await session.get(Bill, bill_id)
+        if not bill:
+            return None
+
+        bill.status = BillStatus.PAID
+        bill.paid_from_account_id = from_account_id
+        bill.transaction_id = transaction_id
+        bill.paid_at = datetime.utcnow()
+        bill.updated_at = datetime.utcnow()
+
+        await session.commit()
+        await session.refresh(bill)
+        return bill
+
+
+# Extended Account Management Functions
+
+
+async def get_account_by_title_and_user(
+    title: str, user_id: str
+) -> Optional[BankAccount]:
+    """Get a bank account by title for a specific user."""
+    async with session_maker() as session:
+        stmt = select(BankAccount).where(
+            and_(BankAccount.title == title, BankAccount.user_id == user_id)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_user_by_phone_number(phone_number: str) -> Optional[str]:
+    """Get user_id by phone number from the calls table (as a proxy for user lookup)."""
+    async with session_maker() as session:
+        stmt = select(Call.user_id).where(Call.phone_number == phone_number).limit(1)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_default_account_for_user(user_id: str) -> Optional[BankAccount]:
+    """Get the first active account for a user (as default account)."""
+    async with session_maker() as session:
+        stmt = (
+            select(BankAccount)
+            .where(
+                and_(
+                    BankAccount.user_id == user_id,
+                    BankAccount.status == AccountStatus.ACTIVE,
+                )
+            )
+            .order_by(BankAccount.created_at)
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def close_account(
+    account_id: int,
+    transfer_to_account_id: Optional[int] = None,
+) -> Optional[BankAccount]:
+    """Close a bank account, optionally transferring remaining balance."""
+    async with session_maker() as session:
+        account = await session.get(BankAccount, account_id)
+        if not account:
+            return None
+
+        # If there's a balance and a transfer account is specified
+        if account.balance > 0 and transfer_to_account_id:
+            transfer_account = await session.get(BankAccount, transfer_to_account_id)
+            if transfer_account:
+                transfer_account.balance += account.balance
+                transfer_account.updated_at = datetime.utcnow()
+                account.balance = Decimal("0.00")
+
+        account.status = AccountStatus.CLOSED
+        account.closed_at = datetime.utcnow()
+        account.updated_at = datetime.utcnow()
+
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
+async def update_account_status(
+    account_id: int, status: AccountStatus
+) -> Optional[BankAccount]:
+    """Update account status (for freeze/unfreeze)."""
+    async with session_maker() as session:
+        account = await session.get(BankAccount, account_id)
+        if not account:
+            return None
+
+        account.status = status
+        account.updated_at = datetime.utcnow()
+
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
+async def generate_account_number() -> str:
+    """Generate a unique account number."""
+    import random
+    import string
+
+    async with session_maker() as session:
+        while True:
+            # Generate a 12-digit account number
+            account_number = "".join(random.choices(string.digits, k=12))
+            stmt = select(BankAccount).where(
+                BankAccount.account_number == account_number
+            )
+            result = await session.execute(stmt)
+            if not result.scalar_one_or_none():
+                return account_number

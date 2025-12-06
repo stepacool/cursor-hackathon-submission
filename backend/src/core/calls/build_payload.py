@@ -3,8 +3,8 @@ from typing import TypedDict, Literal, NotRequired
 
 from pydantic import BaseModel
 
-from infrastructure.models import Call
 from settings import settings
+from infrastructure.models import Call, ToolType
 
 
 class SupportedLanguage(Enum):
@@ -23,29 +23,199 @@ class SupportedLanguage(Enum):
 
 
 class ToolsManager:
-    TRANSFER_MONEY_TOOL_DEFINITION = {
+    # Transfer Tools
+    TRANSFER_MONEY_OWN_ACCOUNTS_TOOL_DEFINITION = {
         "type": "function",
         "function": {
-            "name": "transfer_money",
+            "name": ToolType.TRANSFER_MONEY_OWN_ACCOUNTS.value,
             "strict": True,
-            "description": "Transfer money to another account on this user's account by name",
+            "description": "Transfer money between the user's own accounts by account name/label",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "amount": {"type": "number", "description": "How much money to transfer"},
+                    "amount": {
+                        "type": "number",
+                        "description": "How much money to transfer",
+                    },
                     "account_name_to": {
                         "type": "string",
-                        "description": "What's the name of the account to transfer to",
+                        "description": "The name/label of the account to transfer to",
                     },
                     "account_name_from": {
                         "type": "string",
-                        "description": "What's the name of the account to transfer from",
+                        "description": "The name/label of the account to transfer from",
                     },
                 },
                 "required": ["amount", "account_name_to", "account_name_from"],
+                "additionalProperties": False,
             },
         },
     }
+
+    TRANSFER_MONEY_TO_USER_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.TRANSFER_MONEY_TO_USER.value,
+            "strict": True,
+            "description": "Transfer money to another user by their name or phone number",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "description": "How much money to transfer",
+                    },
+                    "account_name_from": {
+                        "type": "string",
+                        "description": "The name/label of your account to transfer from",
+                    },
+                    "recipient_phone_number": {
+                        "type": "string",
+                        "description": "The phone number of the user to transfer to",
+                    },
+                },
+                "required": ["amount", "account_name_from", "recipient_phone_number"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    # Payment/Bill Tools
+    PAY_BILL_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.PAY_BILL.value,
+            "strict": True,
+            "description": "Pay an outstanding bill (electricity, water, gas, internet, phone, parking, etc.)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "bill_type": {
+                        "type": "string",
+                        "enum": [
+                            "electricity",
+                            "water",
+                            "gas",
+                            "internet",
+                            "tv",
+                            "phone",
+                            "parking",
+                            "other",
+                        ],
+                        "description": "The type of bill to pay",
+                    },
+                    "account_name_from": {
+                        "type": "string",
+                        "description": "The name/label of the account to pay from",
+                    },
+                },
+                "required": ["bill_type", "account_name_from"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    LIST_BILLS_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.LIST_BILLS.value,
+            "strict": True,
+            "description": "List all outstanding bills for the user",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    # Account Management Tools
+    OPEN_ACCOUNT_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.OPEN_ACCOUNT.value,
+            "strict": True,
+            "description": "Open a new bank account with a specified name/label",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "account_title": {
+                        "type": "string",
+                        "description": "The name/label for the new account (e.g., 'Savings', 'Travel Fund')",
+                    },
+                },
+                "required": ["account_title"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    CLOSE_ACCOUNT_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.CLOSE_ACCOUNT.value,
+            "strict": True,
+            "description": "Close an existing bank account. If the account has a balance, specify where to transfer the remaining funds.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "account_title": {
+                        "type": "string",
+                        "description": "The name/label of the account to close",
+                    },
+                    "transfer_to_account": {
+                        "type": "string",
+                        "description": "The name/label of the account to transfer remaining funds to (required if balance is non-zero)",
+                    },
+                },
+                "required": ["account_title"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    FREEZE_ACCOUNT_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.FREEZE_ACCOUNT.value,
+            "strict": True,
+            "description": "Freeze/suspend a bank account to prevent any transactions",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "account_title": {
+                        "type": "string",
+                        "description": "The name/label of the account to freeze",
+                    },
+                },
+                "required": ["account_title"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    UNFREEZE_ACCOUNT_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.UNFREEZE_ACCOUNT.value,
+            "strict": True,
+            "description": "Unfreeze/reactivate a previously frozen bank account",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "account_title": {
+                        "type": "string",
+                        "description": "The name/label of the account to unfreeze",
+                    },
+                },
+                "required": ["account_title"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    # Calendar Tool (kept for reference)
     CALENDAR_CREATE_APPOINTMENT_TOOL_DEFINITION = {
         "type": "function",
         "function": {
@@ -60,7 +230,10 @@ class ToolsManager:
                         "type": "string",
                         "description": "Start time in ISO 8601 format, e.g. 2025-12-10T09:00:00",
                     },
-                    "end_time": {"type": "string", "description": "End time in ISO 8601 format"},
+                    "end_time": {
+                        "type": "string",
+                        "description": "End time in ISO 8601 format",
+                    },
                     "timezone": {
                         "type": "string",
                         "default": "UTC",
@@ -71,6 +244,20 @@ class ToolsManager:
             },
         },
     }
+
+    @classmethod
+    def get_all_banking_tools(cls) -> list:
+        """Return all banking-related tool definitions"""
+        return [
+            cls.TRANSFER_MONEY_OWN_ACCOUNTS_TOOL_DEFINITION,
+            cls.TRANSFER_MONEY_TO_USER_TOOL_DEFINITION,
+            cls.PAY_BILL_TOOL_DEFINITION,
+            cls.LIST_BILLS_TOOL_DEFINITION,
+            cls.OPEN_ACCOUNT_TOOL_DEFINITION,
+            cls.CLOSE_ACCOUNT_TOOL_DEFINITION,
+            cls.FREEZE_ACCOUNT_TOOL_DEFINITION,
+            cls.UNFREEZE_ACCOUNT_TOOL_DEFINITION,
+        ]
 
 
 class VoiceConfig(TypedDict, total=False):
@@ -195,10 +382,8 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
                 },
             ],
             "tools": [
-                {
-                    "type": "endCall",
-                },
-                ToolsManager.TRANSFER_MONEY_TOOL_DEFINITION,
+                {"type": "endCall"},
+                *ToolsManager.get_all_banking_tools(),
             ],
         },
         transcriber={
@@ -216,7 +401,7 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
             "similarityBoost": 0.8,
             "speed": 0.95,
         },
-        first_message="Hi! This is Jason, from Digital Bank. I'm your personal assistant and can control your account."
+        first_message="Hi! This is Jason, from Digital Bank. I'm your personal assistant and can help you with transfers, payments, and account management.",
     ),
     "my": ...,
     "zh": AgentConfig(
