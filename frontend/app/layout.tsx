@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Digital Bank",
+  title: "Banster",
   description:
-    "Secure, simple, and instant banking. The digital bank that protects every transaction.",
+    "Secure, simple, and instant banking. Banster protects every transaction.",
 };
 
 export default function RootLayout({

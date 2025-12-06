@@ -17,8 +17,7 @@ const TypewriterEffectSmoothDemo = () => {
     { text: "awesome" },
     { text: "apps" },
     { text: "with" },
-    { text: "Digital", className: "text-primary" },
-    { text: "Bank.", className: "text-primary" }
+    { text: "Banster", className: "text-primary" }
   ];
 
   return (

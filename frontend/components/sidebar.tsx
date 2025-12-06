@@ -253,15 +253,15 @@ export function Sidebar() {
         <div className="flex items-center gap-3 p-5">
           <div className="relative size-10 rounded-xl overflow-hidden">
             <Image
-              src="/icon.png"
-              alt="NEX Digital Banking"
+              src="/logo.png"
+              alt="Banster digital banking"
               width={40}
               height={40}
               className="object-cover"
               priority
             />
           </div>
-          <span className="font-bold text-xl tracking-tight">Nex</span>
+          <span className="font-bold text-xl tracking-tight">Banster</span>
         </div>
 
         {/* Search */}
@@ -338,7 +338,7 @@ export function Sidebar() {
             Get a Call
           </Button>
           <p className="mt-3 text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            © 2025 Nex Bank
+            © 2025 Banster
           </p>
         </div>
       </aside>

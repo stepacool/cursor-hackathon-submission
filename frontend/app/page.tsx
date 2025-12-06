@@ -53,7 +53,7 @@ export default function Home() {
               Testimonials
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-base-content sm:text-4xl">
-              Customers rave about their experience with Digital Bank
+              Customers rave about their experience with Banster
             </h2>
             <p className="mt-2 text-base text-base-content/70">
               Tap on a card or use the controls to browse more stories.
