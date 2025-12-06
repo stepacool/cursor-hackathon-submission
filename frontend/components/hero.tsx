@@ -33,7 +33,7 @@ export function Hero() {
 
         <div className="mb-10 mt-4  md:mt-6">
           <div className="px-2">
-            <div className="relative mx-auto h-full max-w-7xl border border-primary/20 p-6 [mask-image:radial-gradient(800rem_96rem_at_center,white,transparent)] md:px-12 md:py-20">
+            <div className="relative mx-auto h-full max-w-7xl border border-primary/20 p-6 mask-[radial-gradient(800rem_96rem_at_center,white,transparent)] md:px-12 md:py-20">
               <h1 className="flex  select-none flex-col  px-3 py-2 text-center text-5xl font-semibold leading-none tracking-tight md:flex-col md:text-8xl lg:flex-row lg:text-8xl">
                 <Plus
                   strokeWidth={4}
@@ -73,9 +73,9 @@ export function Hero() {
             transfers, and real-time controls.
           </p>
           <div className="flex justify-center gap-2">
-            <Link href="/signup">
+            <Link href="/dashboard">
               <Button variant="default" size="lg">
-                Start Project
+                Dashboard
               </Button>
             </Link>
             <Link href="/login">
