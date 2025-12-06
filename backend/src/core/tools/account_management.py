@@ -19,7 +19,6 @@ from infrastructure.repositories import (
 
 
 async def open_account(
-    call_id: int,
     user_id: str,
     tool_parameters: OpenAccountToolCallParameters,
 ) -> str:
@@ -30,7 +29,9 @@ async def open_account(
     )
 
     if existing_account:
-        return f"An account with the name '{tool_parameters.account_title}' already exists"
+        return (
+            f"An account with the name '{tool_parameters.account_title}' already exists"
+        )
 
     # Generate unique account number
     account_number = await generate_account_number()
@@ -131,7 +132,6 @@ async def freeze_account(
 
 
 async def unfreeze_account(
-    call_id: int,
     user_id: str,
     tool_parameters: UnfreezeAccountToolCallParameters,
 ) -> str:
@@ -157,3 +157,21 @@ async def unfreeze_account(
     return f"Successfully unfroze account '{tool_parameters.account_title}'"
 
 
+async def list_accounts(
+    user_id: str,
+) -> str:
+    """List all bank accounts for the user"""
+    accounts = await get_accounts_by_user(user_id)
+
+    if not accounts:
+        return "You don't have any bank accounts yet. Would you like to open one?"
+
+    account_list = []
+    for account in accounts:
+        status_text = account.status.value
+        account_list.append(
+            f"- {account.title}: Account #{account.account_number}, Balance: {account.balance}, Status: {status_text}"
+        )
+
+    header = f"You have {len(accounts)} account(s):\n"
+    return header + "\n".join(account_list)

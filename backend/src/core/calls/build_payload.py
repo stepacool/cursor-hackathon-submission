@@ -130,6 +130,21 @@ class ToolsManager:
         },
     }
 
+    LIST_ACCOUNTS_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.LIST_ACCOUNTS.value,
+            "strict": True,
+            "description": "List all bank accounts for the user with their titles, account numbers, balances, and status",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    }
+
     # Account Management Tools
     OPEN_ACCOUNT_TOOL_DEFINITION = {
         "type": "function",
@@ -253,6 +268,7 @@ class ToolsManager:
             cls.TRANSFER_MONEY_TO_USER_TOOL_DEFINITION,
             cls.PAY_BILL_TOOL_DEFINITION,
             cls.LIST_BILLS_TOOL_DEFINITION,
+            cls.LIST_ACCOUNTS_TOOL_DEFINITION,
             cls.OPEN_ACCOUNT_TOOL_DEFINITION,
             cls.CLOSE_ACCOUNT_TOOL_DEFINITION,
             cls.FREEZE_ACCOUNT_TOOL_DEFINITION,

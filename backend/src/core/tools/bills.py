@@ -14,7 +14,6 @@ from infrastructure.repositories import (
 
 
 async def list_outstanding_bills(
-    call_id: int,
     user_id: str,
 ) -> str:
     """List all outstanding bills for the user"""

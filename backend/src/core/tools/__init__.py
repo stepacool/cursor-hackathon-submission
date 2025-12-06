@@ -5,6 +5,7 @@ from .account_management import (
     close_account_tool,
     freeze_account,
     unfreeze_account,
+    list_accounts,
 )
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "close_account_tool",
     "freeze_account",
     "unfreeze_account",
+    "list_accounts",
 ]
 
 

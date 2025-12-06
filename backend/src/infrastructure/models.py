@@ -58,6 +58,7 @@ class ToolType(PyEnum):
     TRANSFER_MONEY_TO_USER = "transfer_money_to_user"
     PAY_BILL = "pay_bill"
     LIST_BILLS = "list_bills"
+    LIST_ACCOUNTS = "list_accounts"
     OPEN_ACCOUNT = "open_account"
     CLOSE_ACCOUNT = "close_account"
     FREEZE_ACCOUNT = "freeze_account"
