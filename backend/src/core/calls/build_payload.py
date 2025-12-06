@@ -420,7 +420,7 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
                 {
                     "type": "endCall",
                 },
-                ToolsManager.TRANSFER_MONEY_TOOL_DEFINITION,
+                ToolsManager.TRANSFER_MONEY_OWN_ACCOUNTS_TOOL_DEFINITION,
             ],
         },
         transcriber={

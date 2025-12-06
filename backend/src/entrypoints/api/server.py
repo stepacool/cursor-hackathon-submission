@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from loguru import logger
 from starlette.requests import Request
 
-from core.tools import list_outstanding_bills, pay_outstanding_bill, open_account
+from core.tools import list_outstanding_bills, pay_outstanding_bill, open_account, freeze_account
 from infrastructure.models import ToolType
 from infrastructure.repositories import get_call_by_phone_number, close_account
 from core.tools.transfer_money import transfer_money_between_own_accounts
@@ -14,7 +14,7 @@ from entrypoints.api.serializers import (
     ToolCallResult,
     ToolCallsResponse,
     TransferMoneyOwnAccountsToolCallParameters, PayBillToolCallParameters, OpenAccountToolCallParameters,
-    CloseAccountToolCallParameters,
+    CloseAccountToolCallParameters, FreezeAccountToolCallParameters,
 )
 from settings import settings
 
@@ -93,7 +93,7 @@ async def webhook_handler(
             call_id=call.id,
             user_id=call.user_id,
             tool_parameters=OpenAccountToolCallParameters(
-                **tool_calls_msg.tool_calls[0].function.arguments
+                **tool_calls_msg.tool_calls[0].function.arguments,
             ),
         )
     elif tool_name == ToolType.CLOSE_ACCOUNT:
@@ -101,9 +101,19 @@ async def webhook_handler(
             call_id=call.id,
             user_id=call.user_id,
             tool_parameters=CloseAccountToolCallParameters(
-                **tool_calls_msg.tool_calls[0].function.arguments
+                **tool_calls_msg.tool_calls[0].function.arguments,
             ),
         )
+    elif tool_name == ToolType.FREEZE_ACCOUNT:
+        result = await freeze_account(
+            call_id=call.id,
+            user_id=call.user_id,
+            tool_parameters=FreezeAccountToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments,
+            )
+        )
+    else:
+        result = "Operation not supported at the moment"
 
     return ToolCallsResponse(
         results=[
