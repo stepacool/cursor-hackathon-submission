@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  Wallet,
   Eye,
   EyeOff,
   RefreshCw,
@@ -13,55 +12,272 @@ import {
   ArrowDownLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
-import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import {
+  accountTypeConfig,
+  type AccountType,
+} from "@/components/create-account-dialog";
+
+// Account interface
+interface Account {
+  id: string;
+  name: string;
+  number: string;
+  balance: number;
+  type: AccountType;
+  status: "active" | "frozen" | "closed";
+  createdAt: string;
+}
+
+// Mock accounts data - matches accounts page
+const allAccounts: Account[] = [
+  {
+    id: "acc-1",
+    name: "Main Checking",
+    number: "4532-8761-7677-8545",
+    balance: 12458.32,
+    type: "checking",
+    status: "active",
+    createdAt: "2024-01-15",
+  },
+  {
+    id: "acc-2",
+    name: "Emergency Savings",
+    number: "4532-8761-2345-6789",
+    balance: 45230.15,
+    type: "savings",
+    status: "active",
+    createdAt: "2024-02-20",
+  },
+  {
+    id: "acc-3",
+    name: "Business Account",
+    number: "4532-8761-9876-5432",
+    balance: 8750.0,
+    type: "business",
+    status: "frozen",
+    createdAt: "2024-03-10",
+  },
+];
 
 export default function BalancePage() {
   const [showBalance, setShowBalance] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [checkingBalance, setCheckingBalance] = useState(12458.32);
-  const session = authClient.useSession();
-  const userId = session.data?.user?.id;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(
+    allAccounts[0].id
+  );
+
+  // Get active accounts only
+  const activeAccounts = allAccounts.filter((a) => a.status === "active");
+  
+  // Get selected account
+  const selectedAccount =
+    allAccounts.find((a) => a.id === selectedAccountId) || allAccounts[0];
+  
+  const checkingBalance = selectedAccount.balance;
 
   // Mock data - in real app this would come from API
-  const monthlySpending = 2847.50;
-  const monthlyIncome = 7500.00;
+  const monthlySpending = 2847.5;
+  const monthlyIncome = 7500.0;
 
-  const recentTransactions = [
-    { id: 1, description: "Coffee Shop", amount: -4.50, date: "Today", type: "debit", icon: "☕" },
-    { id: 2, description: "Salary Deposit", amount: 5000.00, date: "Yesterday", type: "credit", icon: "💰" },
-    { id: 3, description: "Electric Bill", amount: -125.00, date: "Dec 4", type: "debit", icon: "⚡" },
-    { id: 4, description: "Grocery Store", amount: -67.89, date: "Dec 3", type: "debit", icon: "🛒" },
-    { id: 5, description: "Freelance Payment", amount: 850.00, date: "Dec 2", type: "credit", icon: "💼" },
+  // Extended transaction data for modal
+  const allTransactions = [
+    {
+      id: 1,
+      description: "Coffee Shop",
+      amount: -4.5,
+      date: "Today",
+      fullDate: "Dec 6, 2025",
+      time: "10:30 AM",
+      type: "debit",
+      icon: "☕",
+      category: "Food & Dining",
+    },
+    {
+      id: 2,
+      description: "Salary Deposit",
+      amount: 5000.0,
+      date: "Yesterday",
+      fullDate: "Dec 5, 2025",
+      time: "09:00 AM",
+      type: "credit",
+      icon: "💰",
+      category: "Income",
+    },
+    {
+      id: 3,
+      description: "Electric Bill",
+      amount: -125.0,
+      date: "Dec 4",
+      fullDate: "Dec 4, 2025",
+      time: "02:15 PM",
+      type: "debit",
+      icon: "⚡",
+      category: "Utilities",
+    },
+    {
+      id: 4,
+      description: "Grocery Store",
+      amount: -67.89,
+      date: "Dec 3",
+      fullDate: "Dec 3, 2025",
+      time: "05:45 PM",
+      type: "debit",
+      icon: "🛒",
+      category: "Food & Dining",
+    },
+    {
+      id: 5,
+      description: "Freelance Payment",
+      amount: 850.0,
+      date: "Dec 2",
+      fullDate: "Dec 2, 2025",
+      time: "11:20 AM",
+      type: "credit",
+      icon: "💼",
+      category: "Income",
+    },
+    {
+      id: 6,
+      description: "Netflix Subscription",
+      amount: -15.99,
+      date: "Dec 1",
+      fullDate: "Dec 1, 2025",
+      time: "08:00 AM",
+      type: "debit",
+      icon: "🎬",
+      category: "Entertainment",
+    },
+    {
+      id: 7,
+      description: "Gas Station",
+      amount: -45.0,
+      date: "Nov 30",
+      fullDate: "Nov 30, 2025",
+      time: "07:30 AM",
+      type: "debit",
+      icon: "⛽",
+      category: "Transportation",
+    },
+    {
+      id: 8,
+      description: "Restaurant",
+      amount: -89.5,
+      date: "Nov 29",
+      fullDate: "Nov 29, 2025",
+      time: "07:30 PM",
+      type: "debit",
+      icon: "🍽️",
+      category: "Food & Dining",
+    },
+    {
+      id: 9,
+      description: "Online Shopping",
+      amount: -234.99,
+      date: "Nov 28",
+      fullDate: "Nov 28, 2025",
+      time: "03:15 PM",
+      type: "debit",
+      icon: "🛍️",
+      category: "Shopping",
+    },
+    {
+      id: 10,
+      description: "Client Payment",
+      amount: 1500.0,
+      date: "Nov 27",
+      fullDate: "Nov 27, 2025",
+      time: "10:00 AM",
+      type: "credit",
+      icon: "💼",
+      category: "Income",
+    },
+    {
+      id: 11,
+      description: "Gym Membership",
+      amount: -49.99,
+      date: "Nov 26",
+      fullDate: "Nov 26, 2025",
+      time: "06:00 AM",
+      type: "debit",
+      icon: "💪",
+      category: "Health & Fitness",
+    },
+    {
+      id: 12,
+      description: "Pharmacy",
+      amount: -32.45,
+      date: "Nov 25",
+      fullDate: "Nov 25, 2025",
+      time: "04:20 PM",
+      type: "debit",
+      icon: "💊",
+      category: "Health & Fitness",
+    },
+    {
+      id: 13,
+      description: "Uber Ride",
+      amount: -18.75,
+      date: "Nov 24",
+      fullDate: "Nov 24, 2025",
+      time: "09:45 PM",
+      type: "debit",
+      icon: "🚗",
+      category: "Transportation",
+    },
+    {
+      id: 14,
+      description: "Book Store",
+      amount: -42.0,
+      date: "Nov 23",
+      fullDate: "Nov 23, 2025",
+      time: "02:30 PM",
+      type: "debit",
+      icon: "📚",
+      category: "Shopping",
+    },
+    {
+      id: 15,
+      description: "Refund",
+      amount: 156.0,
+      date: "Nov 22",
+      fullDate: "Nov 22, 2025",
+      time: "11:15 AM",
+      type: "credit",
+      icon: "↩️",
+      category: "Refund",
+    },
   ];
+
+  const recentTransactions = allTransactions.slice(0, 5);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const balanceValue =
-      readNamespacedItem(STORAGE_KEYS.balanceAmount, userId)?.value ||
-      (() => {
-        const profile = readNamespacedItem(STORAGE_KEYS.onboarding, userId);
-        if (!profile) return null;
-        try {
-          const parsed = JSON.parse(profile.value) as { balance?: number };
-          return parsed.balance != null ? String(parsed.balance) : null;
-        } catch {
-          return null;
-        }
-      })();
-    if (balanceValue) {
-      const parsed = Number(balanceValue);
-      if (!Number.isNaN(parsed)) {
-        setCheckingBalance(parsed);
-      }
-    }
-  }, [userId]);
+  const handleAccountChange = (accountId: string) => {
+    setSelectedAccountId(accountId);
+  };
+
+  const maskAccountNumber = (number: string) => {
+    return `•••• ${number.slice(-4)}`;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -76,7 +292,9 @@ export default function BalancePage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="font-semibold text-2xl tracking-tight">My Balance</h1>
-          <p className="text-muted-foreground text-sm">Manage your accounts and track spending</p>
+          <p className="text-muted-foreground text-sm">
+            Manage your accounts and track spending
+          </p>
         </div>
         <Button
           variant="outline"
@@ -85,7 +303,9 @@ export default function BalancePage() {
           disabled={isRefreshing}
           className="rounded-xl"
         >
-          <RefreshCw className={cn("size-4 mr-2", isRefreshing && "animate-spin")} />
+          <RefreshCw
+            className={cn("size-4 mr-2", isRefreshing && "animate-spin")}
+          />
           Refresh
         </Button>
       </div>
@@ -97,27 +317,68 @@ export default function BalancePage() {
             {/* Background decorations */}
             <div className="absolute -right-20 -top-20 size-64 rounded-full bg-linear-to-br from-violet-500/20 to-transparent blur-3xl" />
             <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-linear-to-tr from-teal-500/20 to-transparent blur-3xl" />
-            
+
             <div className="relative z-10">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-                    <Wallet className="size-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-white/60">Total Balance</p>
-                    <p className="flex items-center gap-2 text-sm text-white/80">
-                      <CreditCard className="size-3" />
-                      Checking •••• 4532
-                    </p>
-                  </div>
-                </div>
+              {/* Account Selector in Card */}
+              <div className="mb-6 flex items-center justify-between rounded-xl bg-white/10 p-4 backdrop-blur-sm">
+                <Select value={selectedAccountId} onValueChange={handleAccountChange}>
+                  <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 hover:bg-transparent focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-12 items-center justify-center rounded-xl bg-white/10">
+                        {(() => {
+                          const Icon = accountTypeConfig[selectedAccount.type].icon;
+                          return <Icon className="size-6" />;
+                        })()}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm text-white/60">
+                          {selectedAccount.name}
+                        </p>
+                        <p className="flex items-center gap-2 text-sm text-white/80">
+                          <CreditCard className="size-3" />
+                          {accountTypeConfig[selectedAccount.type].label} •{" "}
+                          {maskAccountNumber(selectedAccount.number)}
+                        </p>
+                      </div>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl bg-slate-900 border-slate-700">
+                    {activeAccounts.map((account) => {
+                      const config = accountTypeConfig[account.type];
+                      const Icon = config.icon;
+                      return (
+                        <SelectItem
+                          key={account.id}
+                          value={account.id}
+                          className="rounded-lg text-white focus:bg-white/10 focus:text-white"
+                        >
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="flex size-10 items-center justify-center rounded-lg bg-white/10">
+                              <Icon className="size-5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm">{account.name}</p>
+                              <p className="text-xs text-white/60">
+                                {maskAccountNumber(account.number)} •{" "}
+                                {formatCurrency(account.balance)}
+                              </p>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
                 <button
                   type="button"
                   onClick={() => setShowBalance(!showBalance)}
                   className="rounded-xl bg-white/10 p-2.5 backdrop-blur-sm transition-colors hover:bg-white/20"
                 >
-                  {showBalance ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  {showBalance ? (
+                    <EyeOff className="size-5" />
+                  ) : (
+                    <Eye className="size-5" />
+                  )}
                 </button>
               </div>
 
@@ -164,7 +425,12 @@ export default function BalancePage() {
       <div className="mx-auto mt-8 w-full max-w-4xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Recent Activity</h2>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() => setIsModalOpen(true)}
+          >
             View All
           </Button>
         </div>
@@ -216,6 +482,76 @@ export default function BalancePage() {
           ))}
         </div>
       </div>
+
+      {/* All Transactions Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b border-border/50">
+            <DialogTitle className="text-2xl font-semibold">
+              All Transactions
+            </DialogTitle>
+            <DialogDescription>
+              Complete transaction history for {selectedAccount.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto px-6 pb-6 max-h-[calc(85vh-120px)]">
+            <div className="space-y-1">
+              {allTransactions.map((transaction, index) => (
+                <div
+                  key={transaction.id}
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-xl transition-colors hover:bg-accent/50",
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={cn(
+                        "flex size-11 items-center justify-center rounded-xl text-lg",
+                        transaction.type === "credit"
+                          ? "bg-emerald-500/10"
+                          : "bg-muted/50"
+                      )}
+                    >
+                      {transaction.icon}
+                    </div>
+                    <div>
+                      <p className="font-medium">{transaction.description}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{transaction.fullDate}</span>
+                        <span>•</span>
+                        <span>{transaction.time}</span>
+                        <span>•</span>
+                        <span className="rounded-full bg-muted px-2 py-0.5">
+                          {transaction.category}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {transaction.type === "credit" ? (
+                      <TrendingUp className="size-4 text-emerald-500" />
+                    ) : (
+                      <TrendingDown className="size-4 text-muted-foreground" />
+                    )}
+                    <span
+                      className={cn(
+                        "font-semibold text-base",
+                        transaction.type === "credit"
+                          ? "text-emerald-500"
+                          : "text-foreground"
+                      )}
+                    >
+                      {transaction.type === "credit" ? "+" : ""}
+                      {formatCurrency(transaction.amount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

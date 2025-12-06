@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -12,6 +13,7 @@ import {
   CreditCard,
   Settings,
   HelpCircle,
+  Building2,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState, useEffect, useCallback } from "react";
@@ -55,6 +57,12 @@ export function Sidebar() {
     {
       title: "BANKING",
       items: [
+        {
+          label: "Accounts",
+          href: "/dashboard/accounts",
+          icon: <Building2 className="size-4" />,
+          description: "Open, close, freeze & unfreeze accounts",
+        },
         {
           label: "Balance",
           href: "/dashboard/balance",
@@ -125,10 +133,17 @@ export function Sidebar() {
       <aside className="flex h-screen w-64 flex-col border-r border-border/50 bg-sidebar text-sidebar-foreground">
         {/* Logo */}
         <div className="flex items-center gap-3 p-5">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-teal-400 to-teal-600 shadow-lg shadow-teal-500/20">
-            <span className="text-lg font-bold text-white">C</span>
+          <div className="relative size-10 rounded-xl overflow-hidden">
+            <Image
+              src="/icon.png"
+              alt="NEX Digital Banking"
+              width={40}
+              height={40}
+              className="object-cover"
+              priority
+            />
           </div>
-          <span className="font-bold text-xl tracking-tight">Cracker</span>
+          <span className="font-bold text-xl tracking-tight">Nex</span>
         </div>
 
         {/* Search */}

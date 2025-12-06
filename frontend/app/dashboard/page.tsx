@@ -13,6 +13,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { OnboardingDialog } from "@/components/onboarding-dialog";
+import { CreateAccountDialog } from "@/components/create-account-dialog";
 import { authClient } from "@/lib/auth-client";
 import { readNamespacedItem, STORAGE_KEYS } from "@/lib/local-storage";
 import { cn } from "@/lib/utils";
@@ -131,6 +132,7 @@ export default function Dashboard() {
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [copied, setCopied] = useState(false);
   const [balance, setBalance] = useState(1456);
+  const [openAccountDialog, setOpenAccountDialog] = useState(false);
   const session = authClient.useSession();
   const userId = session.data?.user?.id;
 
@@ -210,6 +212,14 @@ export default function Dashboard() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <OnboardingDialog />
+      <CreateAccountDialog
+        open={openAccountDialog}
+        onOpenChange={setOpenAccountDialog}
+        onSuccess={(account) => {
+          console.log("Account created:", account);
+          // Here you can handle the created account, e.g., update state, make API call, etc.
+        }}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Section - Cards */}
@@ -219,6 +229,7 @@ export default function Dashboard() {
             <h1 className="font-semibold text-2xl tracking-tight">My Virtual Cards</h1>
             <button
               type="button"
+              onClick={() => setOpenAccountDialog(true)}
               className="flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm font-medium transition-all hover:bg-card hover:border-border"
             >
               Add new Card
