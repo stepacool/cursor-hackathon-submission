@@ -60,7 +60,8 @@ async def webhook_handler(
 
     call_id = tool_calls_msg.call.id
     tool_invocation_id = tool_calls_msg.tool_call_list[0].id
-    call = await get_call_by_phone_number(payload.phone_number.number.replace("+", ""))
+    phone_number = payload.message.call.customer.number
+    call = await get_call_by_phone_number(phone_number.replace("+", ""))
 
     tool_name = ToolType(tool_calls_msg.tool_call_list[0].function.name)
 
