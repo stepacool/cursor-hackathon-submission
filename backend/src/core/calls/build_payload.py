@@ -4,6 +4,7 @@ from typing import TypedDict, Literal, NotRequired
 from pydantic import BaseModel
 
 from infrastructure.models import Call
+from settings import settings
 
 
 class SupportedLanguage(Enum):
@@ -218,7 +219,42 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
         first_message="Hi! This is Jason, from Digital Bank. I'm your personal assistant and can control your account."
     ),
     "my": ...,
-    "zh": ...,
+    "zh": AgentConfig(
+        name="Zhi Wu",
+        model={
+            "provider": "openai",
+            "model": "gpt-4o",
+            "temperature": 0.7,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT,
+                },
+            ],
+            "tools": [
+                {
+                    "type": "endCall",
+                },
+                ToolsManager.TRANSFER_MONEY_TOOL_DEFINITION,
+            ],
+        },
+        transcriber={
+            "provider": "deepgram",
+            "model": "nova-2",
+            "language": "zh",
+        },
+        voice={
+            "provider": "11labs",
+            "model": "eleven_multilingual_v2",
+            "voiceId": "R55vTH9XmVSyAcM6YvtV",
+            "language": "zh",
+            "stability": 0.6,
+            "style": 0.3,
+            "similarityBoost": 0.8,
+            "speed": 0.95,
+        },
+        first_message="您好!我是数字银行的Jason。我是您的个人助理,可以帮您管理账户。"
+    ),
 }
 
 
@@ -243,6 +279,7 @@ async def build_call_payload(call: Call) -> VapiAssistantConfig:
             "assistant.started",
         ],
         "server": {
-            "url": "https://webhook.site/c7ec072b-27fb-48be-86f9-7bb7029fde20/webhooks"
+            "url": f"{settings.PROJECT_URL}/webhooks",
+            # "url": "https://webhook.site/c7ec072b-27fb-48be-86f9-7bb7029fde20/webhooks"
         },
     }
