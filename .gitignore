@@ -27,7 +27,7 @@ src/reports/*
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -40,11 +40,11 @@ src/reports/*
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build
 *.pem
 
 # debug
@@ -61,3 +61,6 @@ yarn-error.log*
 next-env.d.ts
 .idea
 .env.local
+
+# node
+.node_modules
