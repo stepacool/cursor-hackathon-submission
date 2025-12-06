@@ -58,7 +58,7 @@ class CoreSettings(BaseSettings):
     APP_NAME: str = "Hackathon App"
     DEBUG: bool = True
 
-    PROJECT_URL: str = "https://webhook.site/c7ec072b-27fb-48be-86f9-7bb7029fde20"
+    PROJECT_URL: str
 
 
 class GROQSettings(BaseSettings):
