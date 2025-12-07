@@ -64,9 +64,7 @@ function convertToDisplayTransaction(
   const isCredit = txn.to_user_id === currentUserId;
   const amount = parseFloat(txn.amount);
 
-  // Add 8 hours to the transaction time
   const transactionDate = new Date(txn.created_at);
-  transactionDate.setHours(transactionDate.getHours() + 8);
 
   return {
     id: txn.id.toString(),
@@ -79,7 +77,7 @@ function convertToDisplayTransaction(
       minute: "2-digit",
       hour12: false,
     }),
-    date: formatTransactionDate(transactionDate.toISOString()),
+    date: formatTransactionDate(txn.created_at),
     icon: getTransactionIcon(txn.type),
     type: isCredit ? "credit" : "debit",
   };
