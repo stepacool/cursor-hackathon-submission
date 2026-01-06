@@ -11,46 +11,46 @@ from infrastructure.db import CustomBase
 
 # Enums
 class AccountStatus(PyEnum):
-    ACTIVE = "active"
-    SUSPENDED = "suspended"
-    CLOSED = "closed"
+    ACTIVE = "ACTIVE"
+    SUSPENDED = "SUSPENDED"
+    CLOSED = "CLOSED"
 
 
 class CallStatus(PyEnum):
-    SCHEDULED = "scheduled"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    SCHEDULED = "SCHEDULED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class TransactionType(PyEnum):
-    TRANSFER = "transfer"
-    DEPOSIT = "deposit"
-    WITHDRAWAL = "withdrawal"
+    TRANSFER = "TRANSFER"
+    DEPOSIT = "DEPOSIT"
+    WITHDRAWAL = "WITHDRAWAL"
 
 
 class TransactionStatus(PyEnum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 
 class BillType(PyEnum):
-    ELECTRICITY = "electricity"
-    WATER = "water"
-    GAS = "gas"
-    INTERNET = "internet"
-    TV = "tv"
-    PHONE = "phone"
-    PARKING = "parking"
-    OTHER = "other"
+    ELECTRICITY = "ELECTRICITY"
+    WATER = "WATER"
+    GAS = "GAS"
+    INTERNET = "INTERNET"
+    TV = "TV"
+    PHONE = "PHONE"
+    PARKING = "PARKING"
+    OTHER = "OTHER"
 
 
 class BillStatus(PyEnum):
-    PENDING = "pending"
-    PAID = "paid"
-    OVERDUE = "overdue"
+    PENDING = "PENDING"
+    PAID = "PAID"
+    OVERDUE = "OVERDUE"
 
 
 class ToolType(PyEnum):
