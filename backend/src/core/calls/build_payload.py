@@ -489,7 +489,40 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
         },
         first_message="Hi! This is Jason, from Banksta. I got a message that you need some banking assistance.",
     ),
-    "my": ...,
+    "my": AgentConfig(
+        name="Aisha",
+        model={
+            "provider": "openai",
+            "model": "gpt-4o",
+            "temperature": 0.7,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT,
+                },
+            ],
+            "tools": [
+                {"type": "endCall"},
+                *ToolsManager.get_all_banking_tools(),
+            ],
+        },
+        transcriber={
+            "provider": "deepgram",
+            "model": "nova-2",
+            "language": "en",
+        },
+        voice={
+            "provider": "11labs",
+            "model": "eleven_multilingual_v2",
+            "voiceId": "UcqZLa941Kkt8ZhEEybf",
+            "language": "my",
+            "stability": 0.6,
+            "style": 0.3,
+            "similarityBoost": 0.8,
+            "speed": 0.95,
+        },
+        first_message="Hi! This is Jason, from Banksta. I got a message that you need some banking assistance.",
+    ),
     "zh": AgentConfig(
         name="Zhi Wu",
         model={

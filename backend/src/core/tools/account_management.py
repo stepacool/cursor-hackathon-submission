@@ -1,4 +1,6 @@
 from decimal import Decimal
+from num2words import num2words
+import re
 
 from entrypoints.api.serializers import (
     OpenAccountToolCallParameters,
@@ -157,10 +159,28 @@ async def unfreeze_account(
     return f"Successfully unfroze account '{tool_parameters.account_title}'"
 
 
-async def list_accounts(
-    user_id: str,
-) -> str:
-    """List all bank accounts for the user"""
+def numbers_to_words(text: str, lang="en") -> str:
+    def replace(match):
+        number = match.group(0)
+        # handle integers and decimals
+        if "." in number:
+            whole, frac = number.split(".")
+            return f"{num2words(int(whole), lang=lang)} point {' '.join(num2words(int(d), lang=lang) for d in frac)}"
+        return num2words(int(number), lang=lang)
+
+    return re.sub(r"\b\d+(\.\d+)?\b", replace, text)
+
+
+def ringgit_to_words(amount: float) -> str:
+    ringgit = int(amount)
+    sen = int(round((amount - ringgit) * 100))
+
+    if sen:
+        return f"{num2words(ringgit)} ringgit and {num2words(sen)} sen"
+    return f"{num2words(ringgit)} ringgit"
+
+
+async def list_accounts(user_id: str) -> str:
     accounts = await get_accounts_by_user(user_id)
 
     if not accounts:
@@ -169,9 +189,13 @@ async def list_accounts(
     account_list = []
     for account in accounts:
         status_text = account.status.value
+        balance_text = ringgit_to_words(account.balance)
+        account_number_text = numbers_to_words(str(account.account_number))
+
         account_list.append(
-            f"- {account.title}: Account #{account.account_number}, Balance: {account.balance} Malaysian Ringgit, Status: {status_text}"
+            f"- {account.title}: Account number {account_number_text}, "
+            f"Balance: {balance_text}, Status: {status_text}"
         )
 
-    header = f"You have {len(accounts)} account(s):\n"
+    header = f"You have {num2words(len(accounts))} accounts:\n"
     return header + "\n".join(account_list)
