@@ -68,7 +68,7 @@ async def health_check():
 async def webhook_handler(
     request: Request,
     payload: ServerWebhookPayload,
-) -> ToolCallsResponse:
+) -> ToolCallsResponse | dict:
     print(f"new request: {await request.body()}")
 
     if payload.message.type != "tool-calls":

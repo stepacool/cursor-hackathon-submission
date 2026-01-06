@@ -1,8 +1,8 @@
-"""initial
+"""initial v2
 
-Revision ID: ab1670855dfa
+Revision ID: 1f9f26c1d3ce
 Revises: 
-Create Date: 2025-12-06 15:29:11.443554
+Create Date: 2026-01-06 12:57:49.778225
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ab1670855dfa'
+revision: str = '1f9f26c1d3ce'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,8 +26,8 @@ def upgrade() -> None:
     sa.Column('account_number', sa.String(length=50), nullable=False),
     sa.Column('user_id', sa.String(length=255), nullable=False),
     sa.Column('balance', sa.Numeric(precision=15, scale=2), nullable=False),
-    sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('status', sa.Enum('ACTIVE', 'SUSPENDED', 'CLOSED', name='accountstatus'), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('closed_at', sa.DateTime(), nullable=True),
@@ -47,7 +47,9 @@ def upgrade() -> None:
     sa.Column('call_sid', sa.String(length=255), nullable=True),
     sa.Column('duration_seconds', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('language', sa.String(length=255), nullable=False),
+    sa.Column('customer_name', sa.String(length=255), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('call_sid')
     )
@@ -62,49 +64,29 @@ def upgrade() -> None:
     sa.Column('confidence', sa.Numeric(precision=5, scale=4), nullable=True),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
     sa.Column('offset_ms', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['call_id'], ['calls.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_call_transcriptions_call_id'), 'call_transcriptions', ['call_id'], unique=False)
     op.create_index('ix_transcription_call_seq', 'call_transcriptions', ['call_id', 'sequence'], unique=False)
-    op.create_table('tool_invocations',
-    sa.Column('id', sa.BigInteger(), nullable=False),
-    sa.Column('call_id', sa.BigInteger(), nullable=False),
-    sa.Column('tool_type', sa.Enum('TRANSFER_MONEY', 'CHECK_BALANCE', 'GET_HISTORY', name='tooltype'), nullable=False),
-    sa.Column('parameters', sa.Text(), nullable=True),
-    sa.Column('response', sa.Text(), nullable=True),
-    sa.Column('success', sa.Boolean(), nullable=False),
-    sa.Column('error_message', sa.Text(), nullable=True),
-    sa.Column('invoked_at', sa.DateTime(), nullable=False),
-    sa.Column('completed_at', sa.DateTime(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['call_id'], ['calls.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_tool_call_invoked', 'tool_invocations', ['call_id', 'invoked_at'], unique=False)
-    op.create_index(op.f('ix_tool_invocations_call_id'), 'tool_invocations', ['call_id'], unique=False)
     op.create_table('transactions',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('reference', sa.String(length=100), nullable=False),
     sa.Column('from_account_id', sa.BigInteger(), nullable=True),
     sa.Column('to_account_id', sa.BigInteger(), nullable=True),
     sa.Column('amount', sa.Numeric(precision=15, scale=2), nullable=False),
-    sa.Column('currency', sa.String(length=3), nullable=False),
     sa.Column('type', sa.Enum('TRANSFER', 'DEPOSIT', 'WITHDRAWAL', name='transactiontype'), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'COMPLETED', 'FAILED', name='transactionstatus'), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('call_id', sa.BigInteger(), nullable=True),
-    sa.Column('tool_invocation_id', sa.BigInteger(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('completed_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['call_id'], ['calls.id'], ),
     sa.ForeignKeyConstraint(['from_account_id'], ['bank_accounts.id'], ),
     sa.ForeignKeyConstraint(['to_account_id'], ['bank_accounts.id'], ),
-    sa.ForeignKeyConstraint(['tool_invocation_id'], ['tool_invocations.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_transaction_from_created', 'transactions', ['from_account_id', 'created_at'], unique=False)
@@ -114,14 +96,38 @@ def upgrade() -> None:
     op.create_index(op.f('ix_transactions_from_account_id'), 'transactions', ['from_account_id'], unique=False)
     op.create_index(op.f('ix_transactions_reference'), 'transactions', ['reference'], unique=True)
     op.create_index(op.f('ix_transactions_to_account_id'), 'transactions', ['to_account_id'], unique=False)
-    op.create_index(op.f('ix_transactions_tool_invocation_id'), 'transactions', ['tool_invocation_id'], unique=False)
+    op.create_table('bills',
+    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('user_id', sa.String(length=255), nullable=False),
+    sa.Column('type', sa.Enum('ELECTRICITY', 'WATER', 'GAS', 'INTERNET', 'TV', 'PHONE', 'PARKING', 'OTHER', name='billtype'), nullable=False),
+    sa.Column('amount', sa.Numeric(precision=15, scale=2), nullable=False),
+    sa.Column('description', sa.String(length=255), nullable=True),
+    sa.Column('due_date', sa.DateTime(), nullable=False),
+    sa.Column('status', sa.Enum('PENDING', 'PAID', 'OVERDUE', name='billstatus'), nullable=False),
+    sa.Column('paid_from_account_id', sa.BigInteger(), nullable=True),
+    sa.Column('transaction_id', sa.BigInteger(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['paid_from_account_id'], ['bank_accounts.id'], ),
+    sa.ForeignKeyConstraint(['transaction_id'], ['transactions.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_bill_user_status', 'bills', ['user_id', 'status'], unique=False)
+    op.create_index(op.f('ix_bills_paid_from_account_id'), 'bills', ['paid_from_account_id'], unique=False)
+    op.create_index(op.f('ix_bills_transaction_id'), 'bills', ['transaction_id'], unique=False)
+    op.create_index(op.f('ix_bills_user_id'), 'bills', ['user_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_transactions_tool_invocation_id'), table_name='transactions')
+    op.drop_index(op.f('ix_bills_user_id'), table_name='bills')
+    op.drop_index(op.f('ix_bills_transaction_id'), table_name='bills')
+    op.drop_index(op.f('ix_bills_paid_from_account_id'), table_name='bills')
+    op.drop_index('ix_bill_user_status', table_name='bills')
+    op.drop_table('bills')
     op.drop_index(op.f('ix_transactions_to_account_id'), table_name='transactions')
     op.drop_index(op.f('ix_transactions_reference'), table_name='transactions')
     op.drop_index(op.f('ix_transactions_from_account_id'), table_name='transactions')
@@ -130,9 +136,6 @@ def downgrade() -> None:
     op.drop_index('ix_transaction_status', table_name='transactions')
     op.drop_index('ix_transaction_from_created', table_name='transactions')
     op.drop_table('transactions')
-    op.drop_index(op.f('ix_tool_invocations_call_id'), table_name='tool_invocations')
-    op.drop_index('ix_tool_call_invoked', table_name='tool_invocations')
-    op.drop_table('tool_invocations')
     op.drop_index('ix_transcription_call_seq', table_name='call_transcriptions')
     op.drop_index(op.f('ix_call_transcriptions_call_id'), table_name='call_transcriptions')
     op.drop_table('call_transcriptions')
