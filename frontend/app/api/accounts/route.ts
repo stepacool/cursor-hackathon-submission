@@ -1,7 +1,7 @@
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {NextResponse} from "next/server";
-import mysqlPool from "@/db/tibd";
+import backendDb from "@/db/backend-db";
 
 // GET - Query all accounts for the authenticated user
 export async function GET(request: Request) {
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // Query to get all accounts for the user
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // Generate a unique account number (format: ACC-XXXXXXXXXX)
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?)`,
+        ) VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
         [
           accountNumber,
           session.user.id,

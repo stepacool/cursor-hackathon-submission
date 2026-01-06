@@ -4,12 +4,12 @@ export interface Transaction {
   reference: string;
   from_account_id: number | null;
   to_account_id: number | null;
-  amount: string; // decimal comes as string from MySQL
+  amount: string; // decimal comes as string from PostgreSQL
   type: 'TRANSFER' | 'DEPOSIT' | 'WITHDRAWAL';
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   description: string | null;
   call_id: number | null;
-  created_at: string; // datetime comes as string from MySQL
+  created_at: string; // datetime comes as string from PostgreSQL
   completed_at: string | null;
   updated_at: string | null;
 

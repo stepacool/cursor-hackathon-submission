@@ -1,13 +1,13 @@
 
 import dotenv from 'dotenv';
-import mysqlPool from '../db/tibd';
+import backendDb from '../db/backend-db';
 
 dotenv.config();
 
 async function testConnection() {
   try {
     console.log('Testing database connection...');
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
     console.log('Successfully obtained connection from pool.');
     
     const [rows] = await connection.query('SELECT 1 as result');

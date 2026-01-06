@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import mysqlPool from "@/db/tibd";
-import type { ResultSetHeader } from "mysql2";
+import backendDb, { type ResultSetHeader } from "@/db/backend-db";
 
 type DbCallStatus =
   | "SCHEDULED"
@@ -44,7 +43,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       const [rows] = await connection.query(
@@ -151,7 +150,7 @@ export async function POST(request: Request) {
 
     const now = new Date();
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       const [insertResult] = await connection.query(
@@ -172,7 +171,7 @@ export async function POST(request: Request) {
         [session.user.id, sanitizedPhoneNumber, scheduledDate, status, callLanguage, sanitizedCustomerName, now, now],
       );
 
-      const callId = (insertResult as ResultSetHeader).insertId;
+      const callId = (insertResult as unknown as ResultSetHeader).insertId;
 
       const [rows] = await connection.query(
         `SELECT 
@@ -254,7 +253,7 @@ export async function PATCH(request: Request) {
     }
 
     const now = new Date();
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // Check if the call belongs to the user

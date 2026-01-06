@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `app/` holds Next.js App Router routes (auth flows like `login`/`signup`, dashboard, API endpoints in `app/api`).
 - `components/` houses Radix/Tailwind UI plus `components/ui/` shadcn primitives declared in `components.json`; lean on these before adding new design tokens.
-- `lib/` contains auth/client utilities; `db/` defines the Drizzle schema and connections; `migrations/` stores generated SQL.
+- `lib/` contains auth/client utilities; `db/` defines the Drizzle schema and connections (drizzle.ts for auth data via DATABASE_URL, backend-db.ts for banking data via DATABASE_URL_BACKEND); `migrations/` stores generated SQL.
 - `types/` centralizes shared API/domain contracts (bank accounts, transactions). Keep these interfaces in sync with the Drizzle schema and any client fetchers that consume them.
 - `server/` groups server-side helpers for members, organizations, permissions; `public/` keeps static assets; `scripts/` stores operational scripts (e.g., DB connection checks).
 - `proxy.ts` is the Next middleware enforcing Better Auth on `/dashboard` routes—extend its `matcher` when new authenticated surfaces are introduced.
@@ -35,7 +35,7 @@
 - PRs should summarize changes, link issues, attach screenshots/GIFs for UI updates, and call out migrations or env additions. Ensure `pnpm lint` and `pnpm build` pass locally and note any skipped checks.
 
 ## Security & Configuration Tips
-- Keep secrets in `.env`; never commit them. Rotate `DATABASE_URL`/auth credentials when changing environments.
+- Keep secrets in `.env`; never commit them. Rotate `DATABASE_URL`, `DATABASE_URL_BACKEND`, and auth credentials when changing environments.
 - Respect the Better Auth middleware in `proxy.ts`—protect new authenticated routes there and verify session cookies before issuing server actions.
 - Prefer regenerating migrations via Drizzle over hand-editing SQL; review generated files in `migrations/` into PRs.
 - Treat `public/` assets as non-sensitive and move anything dynamic behind the API instead of exposing it statically.
