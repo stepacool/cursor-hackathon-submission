@@ -454,7 +454,7 @@ End interactions by:
 """
 
 
-PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
+PER_LANGUAGE_CONFIGS: dict[Literal["en", "ms", "zh"], AgentConfig] = {
     "en": AgentConfig(
         name="Jason",
         model={
@@ -489,7 +489,7 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "my", "zh"], AgentConfig] = {
         },
         first_message="Hi! This is Jason, from Banksta. I got a message that you need some banking assistance.",
     ),
-    "my": AgentConfig(
+    "ms": AgentConfig(
         name="Aisha",
         model={
             "provider": "openai",
