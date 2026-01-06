@@ -509,7 +509,7 @@ PER_LANGUAGE_CONFIGS: dict[Literal["en", "ms", "zh"], AgentConfig] = {
         transcriber={
             "provider": "deepgram",
             "model": "nova-2",
-            "language": "en",
+            "language": "ms",
         },
         voice={
             "provider": "11labs",
