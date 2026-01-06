@@ -38,7 +38,6 @@
     "resend": "^6.5.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "ws": "^8.19.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -47,7 +46,6 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
-    "@types/ws": "^8.18.1",
     "daisyui": "^5.5.8",
     "drizzle-kit": "^0.31.7",
     "husky": "^9.1.7",

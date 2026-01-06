@@ -1,8 +1,4 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-
-// Enable WebSocket for local development with Neon
-neonConfig.webSocketConstructor = ws;
+import { Pool } from "@neondatabase/serverless";
 
 // Extend the global type to include our singleton
 declare global {
