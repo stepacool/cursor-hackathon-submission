@@ -4,9 +4,9 @@ export interface BankAccount {
   account_number: string;
   user_id: string;
   title: string;
-  balance: string; // decimal comes as string from MySQL
+  balance: string; // decimal comes as string from PostgreSQL
   status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
-  created_at: string; // datetime comes as string from MySQL
+  created_at: string; // datetime comes as string from PostgreSQL
   updated_at: string;
   closed_at: string | null;
 }

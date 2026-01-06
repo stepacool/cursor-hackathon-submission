@@ -1,8 +1,7 @@
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {NextResponse} from "next/server";
-import mysqlPool from "@/db/tibd";
-import type {ResultSetHeader} from "mysql2";
+import backendDb, {type ResultSetHeader} from "@/db/backend-db";
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +15,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // Query to get all transactions where the user is involved
@@ -114,7 +113,7 @@ export async function POST(request: Request) {
       : "";
     const trimmedNote = typeof note === "string" ? note.trim() : "";
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
     let transactionActive = false;
     let rolledBack = false;
 
@@ -255,7 +254,7 @@ export async function POST(request: Request) {
         ],
       );
 
-      const transactionId = (insertResult as ResultSetHeader).insertId;
+      const transactionId = (insertResult as unknown as ResultSetHeader).insertId;
 
       const [transactionRows] = await connection.query(
         `SELECT 

@@ -1,7 +1,7 @@
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {NextResponse} from "next/server";
-import mysqlPool from "@/db/tibd";
+import backendDb from "@/db/backend-db";
 
 // GET - Query specific account details
 export async function GET(
@@ -20,7 +20,7 @@ export async function GET(
     }
 
     const { accountId } = await params;
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // Query specific account
@@ -92,7 +92,7 @@ export async function PATCH(
       );
     }
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await backendDb.getConnection();
 
     try {
       // First, check if account exists and belongs to user

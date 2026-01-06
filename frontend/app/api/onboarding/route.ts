@@ -86,9 +86,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Import mysqlPool dynamically
-    const mysqlPool = (await import("@/db/tibd")).default;
-    const connection = await mysqlPool.getConnection();
+    // Import backendDb dynamically
+    const backendDb = (await import("@/db/backend-db")).default;
+    const connection = await backendDb.getConnection();
 
     try {
       // Generate a unique account number (format: ACC-XXXXXXXXXX)
