@@ -56,6 +56,9 @@ class BillStatus(PyEnum):
 class ToolType(PyEnum):
     TRANSFER_MONEY_OWN_ACCOUNTS = "transfer_money_own_accounts"
     TRANSFER_MONEY_TO_USER = "transfer_money_to_user"
+    REQUEST_TRANSFER_OWN_ACCOUNTS = "request_transfer_own_accounts"
+    REQUEST_TRANSFER_TO_USER = "request_transfer_to_user"
+    CONFIRM_TRANSFER_OTP = "confirm_transfer_otp"
     PAY_BILL = "pay_bill"
     LIST_BILLS = "list_bills"
     LIST_ACCOUNTS = "list_accounts"
@@ -65,6 +68,12 @@ class ToolType(PyEnum):
     UNFREEZE_ACCOUNT = "unfreeze_account"
     CHECK_BALANCE = "check_balance"
     GET_HISTORY = "get_history"
+
+
+class OTPStatus(PyEnum):
+    PENDING = "PENDING"
+    USED = "USED"
+    EXPIRED = "EXPIRED"
 
 
 # Models
@@ -225,3 +234,34 @@ class CallTranscription(CustomBase):
     call: Mapped["Call"] = relationship(back_populates="transcriptions")
 
     __table_args__ = (Index("ix_transcription_call_seq", "call_id", "sequence"),)
+
+
+class OTP(CustomBase):
+    __tablename__ = "otps"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), index=True)
+    token: Mapped[str] = mapped_column(String(6))
+    
+    transaction_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("transactions.id"), nullable=True, index=True
+    )
+    
+    status: Mapped[OTPStatus] = mapped_column(default=OTPStatus.PENDING)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    transaction: Mapped[Optional["Transaction"]] = relationship(
+        foreign_keys=[transaction_id]
+    )
+
+    __table_args__ = (
+        Index("ix_otp_user_status", "user_id", "status"),
+        Index("ix_otp_user_pending", "user_id", "status", "expires_at"),
+    )

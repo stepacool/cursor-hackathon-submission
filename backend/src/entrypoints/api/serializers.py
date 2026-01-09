@@ -658,3 +658,9 @@ class UnfreezeAccountToolCallParameters(BaseModel):
     """Parameters for unfreeze account tool"""
     account_title: str = Field(..., alias="account_title")
     model_config = ConfigDict(populate_by_name=True)
+
+
+class ConfirmTransferOTPToolCallParameters(BaseModel):
+    """Parameters for confirming a transfer with OTP"""
+    otp_token: str = Field(..., alias="otp_code")
+    model_config = ConfigDict(populate_by_name=True)

@@ -19,6 +19,7 @@ import {
   User,
   Loader2,
   Languages,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "./ui/input";
@@ -198,6 +199,12 @@ export function Sidebar() {
     {
       title: "ACCOUNT",
       items: [
+        {
+          label: "OTP Codes",
+          href: "/dashboard/otps",
+          icon: <KeyRound className="size-4" />,
+          description: "View your one-time passwords for transactions",
+        },
         {
           label: "Security & Setting",
           href: "/dashboard/security",

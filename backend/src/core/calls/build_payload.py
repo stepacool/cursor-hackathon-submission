@@ -230,6 +230,83 @@ class ToolsManager:
         },
     }
 
+    # OTP-based Transfer Tools
+    REQUEST_TRANSFER_OWN_ACCOUNTS_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.REQUEST_TRANSFER_OWN_ACCOUNTS.value,
+            "strict": True,
+            "description": "Request a transfer between the user's own accounts. This will generate an OTP that the user must provide to confirm the transaction.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "description": "How much money to transfer",
+                    },
+                    "account_name_to": {
+                        "type": "string",
+                        "description": "The name/label of the account to transfer to",
+                    },
+                    "account_name_from": {
+                        "type": "string",
+                        "description": "The name/label of the account to transfer from",
+                    },
+                },
+                "required": ["amount", "account_name_to", "account_name_from"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    REQUEST_TRANSFER_TO_USER_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.REQUEST_TRANSFER_TO_USER.value,
+            "strict": True,
+            "description": "Request a transfer to another user by their phone number. This will generate an OTP that the user must provide to confirm the transaction.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "description": "How much money to transfer",
+                    },
+                    "account_name_from": {
+                        "type": "string",
+                        "description": "The name/label of your account to transfer from",
+                    },
+                    "recipient_phone_number": {
+                        "type": "string",
+                        "description": "The phone number of the user to transfer to",
+                    },
+                },
+                "required": ["amount", "account_name_from", "recipient_phone_number"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+    CONFIRM_TRANSFER_OTP_TOOL_DEFINITION = {
+        "type": "function",
+        "function": {
+            "name": ToolType.CONFIRM_TRANSFER_OTP.value,
+            "strict": True,
+            "description": "Confirm a pending transfer transaction using the OTP code provided by the user",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "otp_code": {
+                        "type": "string",
+                        "description": "The 6-digit OTP code provided by the user to confirm the transaction",
+                    },
+                },
+                "required": ["otp_code"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
     # Calendar Tool (kept for reference)
     CALENDAR_CREATE_APPOINTMENT_TOOL_DEFINITION = {
         "type": "function",
@@ -264,8 +341,11 @@ class ToolsManager:
     def get_all_banking_tools(cls) -> list:
         """Return all banking-related tool definitions"""
         return [
-            cls.TRANSFER_MONEY_OWN_ACCOUNTS_TOOL_DEFINITION,
-            cls.TRANSFER_MONEY_TO_USER_TOOL_DEFINITION,
+            # OTP-based transfer tools (secure flow)
+            cls.REQUEST_TRANSFER_OWN_ACCOUNTS_TOOL_DEFINITION,
+            cls.REQUEST_TRANSFER_TO_USER_TOOL_DEFINITION,
+            cls.CONFIRM_TRANSFER_OTP_TOOL_DEFINITION,
+            # Other banking tools
             cls.PAY_BILL_TOOL_DEFINITION,
             cls.LIST_BILLS_TOOL_DEFINITION,
             cls.LIST_ACCOUNTS_TOOL_DEFINITION,

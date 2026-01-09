@@ -10,11 +10,13 @@ from .models import (
     Bill,
     Call,
     CallTranscription,
+    OTP,
     Transaction,
     AccountStatus,
     BillStatus,
     BillType,
     CallStatus,
+    OTPStatus,
     TransactionStatus,
     TransactionType,
 )
@@ -575,3 +577,125 @@ async def generate_account_number() -> str:
             result = await session.execute(stmt)
             if not result.scalar_one_or_none():
                 return account_number
+
+
+# OTP Repository Functions
+
+
+async def generate_otp_token() -> str:
+    """Generate a 6-digit OTP token."""
+    import random
+    return "".join(random.choices("0123456789", k=6))
+
+
+async def create_otp(
+    user_id: str,
+    transaction_id: int,
+    expires_in_minutes: int = 5,
+) -> OTP:
+    """Create a new OTP for a pending transaction."""
+    from datetime import timedelta
+    
+    async with session_maker() as session:
+        # Expire any existing pending OTPs for this user
+        stmt = (
+            select(OTP)
+            .where(OTP.user_id == user_id)
+            .where(OTP.status == OTPStatus.PENDING)
+        )
+        result = await session.execute(stmt)
+        existing_otps = result.scalars().all()
+        for existing_otp in existing_otps:
+            existing_otp.status = OTPStatus.EXPIRED
+            existing_otp.updated_at = datetime.utcnow()
+        
+        # Create new OTP
+        token = await generate_otp_token()
+        expires_at = datetime.utcnow() + timedelta(minutes=expires_in_minutes)
+        
+        otp = OTP(
+            user_id=user_id,
+            token=token,
+            transaction_id=transaction_id,
+            status=OTPStatus.PENDING,
+            expires_at=expires_at,
+        )
+        session.add(otp)
+        await session.commit()
+        await session.refresh(otp)
+        return otp
+
+
+async def get_pending_otp_by_user(user_id: str) -> Optional[OTP]:
+    """Get the current pending OTP for a user."""
+    async with session_maker() as session:
+        stmt = (
+            select(OTP)
+            .where(OTP.user_id == user_id)
+            .where(OTP.status == OTPStatus.PENDING)
+            .where(OTP.expires_at > datetime.utcnow())
+            .options(selectinload(OTP.transaction))
+            .order_by(desc(OTP.created_at))
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+async def get_otps_by_user(
+    user_id: str,
+    status: Optional[OTPStatus] = None,
+    limit: int = 50,
+) -> List[OTP]:
+    """Get all OTPs for a user, optionally filtered by status."""
+    async with session_maker() as session:
+        stmt = select(OTP).where(OTP.user_id == user_id)
+
+        if status:
+            stmt = stmt.where(OTP.status == status)
+
+        stmt = stmt.options(selectinload(OTP.transaction))
+        stmt = stmt.order_by(desc(OTP.created_at)).limit(limit)
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
+async def verify_and_use_otp(user_id: str, token: str) -> Optional[OTP]:
+    """Verify OTP token and mark it as used. Returns the OTP if valid, None otherwise."""
+    async with session_maker() as session:
+        stmt = (
+            select(OTP)
+            .where(OTP.user_id == user_id)
+            .where(OTP.token == token)
+            .where(OTP.status == OTPStatus.PENDING)
+            .where(OTP.expires_at > datetime.utcnow())
+            .options(selectinload(OTP.transaction))
+        )
+        result = await session.execute(stmt)
+        otp = result.scalar_one_or_none()
+        
+        if not otp:
+            return None
+        
+        otp.status = OTPStatus.USED
+        otp.used_at = datetime.utcnow()
+        otp.updated_at = datetime.utcnow()
+        
+        await session.commit()
+        await session.refresh(otp)
+        return otp
+
+
+async def expire_otp(otp_id: int) -> Optional[OTP]:
+    """Mark an OTP as expired."""
+    async with session_maker() as session:
+        otp = await session.get(OTP, otp_id)
+        if not otp:
+            return None
+        
+        otp.status = OTPStatus.EXPIRED
+        otp.updated_at = datetime.utcnow()
+        
+        await session.commit()
+        await session.refresh(otp)
+        return otp
