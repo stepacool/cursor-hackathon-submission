@@ -18,6 +18,9 @@ from infrastructure.repositories import get_call_by_phone_number
 from core.tools.transfer_money import (
     transfer_money_between_own_accounts,
     transfer_money_to_user,
+    request_transfer_own_accounts,
+    request_transfer_to_user,
+    confirm_transfer_otp,
 )
 from entrypoints.api.serializers import (
     ServerWebhookPayload,
@@ -26,6 +29,7 @@ from entrypoints.api.serializers import (
     ToolCallsResponse,
     TransferMoneyOwnAccountsToolCallParameters,
     TransferMoneyToUserToolCallParameters,
+    ConfirmTransferOTPToolCallParameters,
     PayBillToolCallParameters,
     OpenAccountToolCallParameters,
     CloseAccountToolCallParameters,
@@ -143,6 +147,30 @@ async def webhook_handler(
             user_id=call.user_id,
             tool_parameters=UnfreezeAccountToolCallParameters(
                 **tool_calls_msg.tool_calls[0].function.arguments,
+            ),
+        )
+    elif tool_name == ToolType.REQUEST_TRANSFER_OWN_ACCOUNTS:
+        result = await request_transfer_own_accounts(
+            call_id=call.id,
+            user_id=call.user_id,
+            tool_parameters=TransferMoneyOwnAccountsToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments
+            ),
+        )
+    elif tool_name == ToolType.REQUEST_TRANSFER_TO_USER:
+        result = await request_transfer_to_user(
+            call_id=call.id,
+            user_id=call.user_id,
+            tool_parameters=TransferMoneyToUserToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments
+            ),
+        )
+    elif tool_name == ToolType.CONFIRM_TRANSFER_OTP:
+        result = await confirm_transfer_otp(
+            call_id=call.id,
+            user_id=call.user_id,
+            tool_parameters=ConfirmTransferOTPToolCallParameters(
+                **tool_calls_msg.tool_calls[0].function.arguments
             ),
         )
     else:
